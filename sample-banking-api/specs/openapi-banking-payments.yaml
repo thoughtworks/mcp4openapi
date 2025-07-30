@@ -1,0 +1,563 @@
+openapi: 3.0.3
+info:
+  title: Banking Payment API
+  description: API for processing payments from banking products to payees
+  version: 1.0.0
+  contact:
+    name: Banking API Support
+    email: api-support@bank.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.bank.com/v1
+    description: Production server
+  - url: https://staging-api.bank.com/v1
+    description: Staging server
+
+paths:
+  /v1/banking/payments:
+    get:
+      summary: Search past payments
+      description: |
+        Search for past payment transactions using various criteria.
+        At least one search parameter must be provided.
+        
+        Search options:
+        - Filter by account ID/number (exact match)
+        - Filter by payee ID (exact match)  
+        - Filter by exact payment amount
+        - Search by payee name (partial match supported)
+        - Search by product name (partial match supported)  
+        - Search by payment date range (startDate required, endDate optional)
+        
+        Results are returned in descending order by payment execution date (most recent first).
+      operationId: searchPayments
+      tags:
+        - Payments
+      parameters:
+        - name: accountId
+          in: query
+          required: false
+          description: Filter payments by account ID/number
+          schema:
+            type: string
+            maxLength: 20
+            example: "9876543210"
+        - name: payeeId
+          in: query
+          required: false
+          description: Filter payments by payee ID
+          schema:
+            type: string
+            pattern: '^payee_[a-zA-Z0-9]+$'
+            example: "payee_9n8m7l6k5j4i3h2g"
+        - name: amount
+          in: query
+          required: false
+          description: Filter payments by exact amount
+          schema:
+            type: number
+            minimum: 0.01
+            example: 750.00
+        - name: payeeName
+          in: query
+          required: false
+          description: Search payments by payee name (partial match supported)
+          schema:
+            type: string
+            maxLength: 100
+            example: "John Doe"
+        - name: productName
+          in: query
+          required: false
+          description: Search payments by product name (partial match supported)
+          schema:
+            type: string
+            maxLength: 100
+            example: "Complete Freedom Savings"
+        - name: startDate
+          in: query
+          required: false
+          description: Start date for payment date range search (YYYYMMDD format). Required if endDate is provided.
+          schema:
+            type: string
+            pattern: '^[0-9]{8}$'
+            example: "20240101"
+        - name: endDate
+          in: query
+          required: false
+          description: End date for payment date range search (YYYYMMDD format). If not provided, searches up to current date.
+          schema:
+            type: string
+            pattern: '^[0-9]{8}$'
+            example: "20240131"
+        - name: maxResult
+          in: query
+          required: false
+          description: Maximum number of payment records to return (default 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+            example: 50
+      responses:
+        '200':
+          description: Payment search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentSearchResponse'
+              example:
+                payments:
+                  - transactionId: "txn_pay_9x8y7z6w5v4u3t2s"
+                    productName: "Complete Freedom Savings Account"
+                    payeeName: "John Doe"
+                    amount: 150.75
+                    paymentReference: "Rent payment for January 2024"
+                    paymentExecutionDate: "20240115"
+                    status: "completed"
+                    createdAt: "2024-01-15T09:30:00Z"
+                  - transactionId: "txn_pay_a1b2c3d4e5f6g7h8"
+                    productName: "Business Cheque Account"
+                    payeeName: "Jane Smith"
+                    amount: 2500.00
+                    paymentReference: "Invoice #2024-001 payment"
+                    paymentExecutionDate: "20240110"
+                    status: "completed"
+                    createdAt: "2024-01-10T14:20:00Z"
+                pagination:
+                  total: 45
+                  returned: 2
+                  maxResult: 100
+                  hasMore: false
+        '400':
+          description: Bad request - Invalid search parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                no_search_criteria:
+                  summary: No search criteria provided
+                  value:
+                    error: "VALIDATION_ERROR"
+                    message: "At least one search parameter must be provided"
+                    details:
+                      - field: "searchCriteria"
+                        message: "Provide at least one of: payeeName, productName, or startDate"
+                invalid_date_range:
+                  summary: Invalid date range
+                  value:
+                    error: "VALIDATION_ERROR"
+                    message: "Invalid date range: endDate cannot be before startDate"
+                    details:
+                      - field: "endDate"
+                        message: "End date must be after or equal to start date"
+                end_date_without_start:
+                  summary: End date provided without start date
+                  value:
+                    error: "VALIDATION_ERROR"
+                    message: "startDate is required when endDate is provided"
+                    details:
+                      - field: "startDate"
+                        message: "Start date is required for date range searches"
+        '401':
+          description: Unauthorized - Invalid or missing authentication token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "UNAUTHORIZED"
+                message: "Invalid or missing authentication token"
+        '403':
+          description: Forbidden - Insufficient permissions to view payment history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "FORBIDDEN"
+                message: "You do not have permission to view payment history for this account"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "INTERNAL_ERROR"
+                message: "An unexpected error occurred while searching payments"
+
+  /v1/banking/payments/payTo:
+    post:
+      summary: Make a payment to a payee
+      description: |
+        Process a payment from a specific banking product to an existing payee.
+        The payment will be debited from the specified product and credited to the payee.
+        
+        Payment execution can be immediate or scheduled for a future date.
+      operationId: payToPayee
+      tags:
+        - Payments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PayToRequest'
+            examples:
+              immediate_payment:
+                summary: Immediate payment to existing payee
+                value:
+                  accountNumber: "1234567890"
+                  productId: "SAV001ABC"
+                  payeeId: "payee_7f8a9b2c1d3e4f5g"
+                  amount: 150.75
+                  paymentReference: "Rent payment for January 2024"
+                  paymentDate: "20240115"
+              scheduled_payment:
+                summary: Scheduled payment without reference
+                value:
+                  accountNumber: "9876543210"
+                  productId: "CHQ002XYZ"
+                  payeeId: "payee_a1b2c3d4e5f6g7h8"
+                  amount: 1000.00
+                  paymentDate: "20240201"
+      responses:
+        '201':
+          description: Payment initiated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PayToResponse'
+              example:
+                transactionId: "txn_pay_9x8y7z6w5v4u3t2s"
+                productName: "Complete Freedom Savings Account"
+                payeeName: "John Doe"
+                paymentExecutionDate: "20240115"
+                status: "initiated"
+                message: "Payment has been successfully initiated"
+        '400':
+          description: Bad request - Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_amount:
+                  summary: Invalid payment amount
+                  value:
+                    error: "VALIDATION_ERROR"
+                    message: "Payment amount must be greater than 1.00"
+                    details:
+                      - field: "amount"
+                        message: "Amount must be a positive number greater than 1.00"
+                invalid_date:
+                  summary: Invalid payment date format
+                  value:
+                    error: "VALIDATION_ERROR"
+                    message: "Payment date must be in YYYYMMDD format"
+                    details:
+                      - field: "paymentDate"
+                        message: "Date must be in YYYYMMDD format (e.g., 20240115)"
+        '401':
+          description: Unauthorized - Invalid or missing authentication token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "UNAUTHORIZED"
+                message: "Invalid or missing authentication token"
+        '403':
+          description: Forbidden - Insufficient permissions for the account or product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "FORBIDDEN"
+                message: "You do not have permission to make payments from this product"
+        '404':
+          description: Resource not found - Payee or product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                payee_not_found:
+                  summary: Payee not found
+                  value:
+                    error: "PAYEE_NOT_FOUND"
+                    message: "The specified payee does not exist or is not accessible"
+                product_not_found:
+                  summary: Product not found
+                  value:
+                    error: "PRODUCT_NOT_FOUND"
+                    message: "The specified product does not exist or is not accessible"
+        '409':
+          description: Conflict - Business rule violation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                insufficient_funds:
+                  summary: Insufficient funds
+                  value:
+                    error: "INSUFFICIENT_FUNDS"
+                    message: "The selected product has insufficient funds for this payment"
+                payment_limit_exceeded:
+                  summary: Payment limit exceeded
+                  value:
+                    error: "PAYMENT_LIMIT_EXCEEDED"
+                    message: "This payment exceeds the daily transaction limit"
+                invalid_payment_date:
+                  summary: Invalid payment date
+                  value:
+                    error: "INVALID_PAYMENT_DATE"
+                    message: "Payment date cannot be in the past or exceed maximum scheduling period"
+        '422':
+          description: Unprocessable entity - Business validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "BUSINESS_RULE_VIOLATION"
+                message: "Payment cannot be processed due to account restrictions"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "INTERNAL_ERROR"
+                message: "An unexpected error occurred while processing the payment"
+
+components:
+  schemas:
+    PayToRequest:
+      type: object
+      required:
+        - accountNumber
+        - productId
+        - payeeId
+        - amount
+        - paymentDate
+      properties:
+        accountNumber:
+          type: string
+          description: The account number that owns the product to be debited
+          pattern: '^[0-9]+$'
+          example: "1234567890"
+        productId:
+          type: string
+          description: The specific product/account to debit the payment from
+          pattern: '^[a-zA-Z0-9]+$'
+          maxLength: 50
+          example: "SAV001ABC"
+        payeeId:
+          type: string
+          description: The unique identifier of the payee to receive the payment
+          pattern: '^payee_[a-zA-Z0-9]+$'
+          example: "payee_7f8a9b2c1d3e4f5g"
+        amount:
+          type: number
+          format: decimal
+          description: Payment amount in dollars (up to 2 decimal places)
+          minimum: 1.01
+          multipleOf: 0.01
+          example: 150.75
+        paymentReference:
+          type: string
+          description: Optional reference or description for the payment
+          maxLength: 250
+          example: "Rent payment for January 2024"
+        paymentDate:
+          type: string
+          description: Date when the payment should be executed (YYYYMMDD format)
+          pattern: '^[0-9]{8}$'
+          example: "20240115"
+
+    PayToResponse:
+      type: object
+      required:
+        - transactionId
+        - productName
+        - payeeName
+        - paymentExecutionDate
+        - status
+        - message
+      properties:
+        transactionId:
+          type: string
+          description: Unique identifier for the payment transaction
+          pattern: '^txn_pay_[a-zA-Z0-9]+$'
+          example: "txn_pay_9x8y7z6w5v4u3t2s"
+        productName:
+          type: string
+          description: Name/description of the product being debited
+          example: "Complete Freedom Savings Account"
+        payeeName:
+          type: string
+          description: Name of the payee receiving the payment
+          example: "John Doe"
+        paymentExecutionDate:
+          type: string
+          description: Date when the payment will be/was executed (YYYYMMDD format)
+          pattern: '^[0-9]{8}$'
+          example: "20240115"
+        status:
+          type: string
+          description: Current status of the payment
+          enum: 
+            - "initiated"
+            - "scheduled" 
+            - "processing"
+            - "completed"
+            - "failed"
+          example: "initiated"
+        message:
+          type: string
+          description: Human-readable status message
+          example: "Payment has been successfully initiated"
+
+    PaymentSearchResponse:
+      type: object
+      required:
+        - payments
+        - pagination
+      properties:
+        payments:
+          type: array
+          description: List of payment transactions matching the search criteria
+          items:
+            $ref: '#/components/schemas/PaymentRecord'
+        pagination:
+          type: object
+          description: Pagination information for the search results
+          required:
+            - total
+            - returned
+            - maxResult
+            - hasMore
+          properties:
+            total:
+              type: integer
+              description: Total number of payments matching the search criteria
+              example: 45
+            returned:
+              type: integer
+              description: Number of payment records returned in this response
+              example: 25
+            maxResult:
+              type: integer
+              description: Maximum number of results requested
+              example: 100
+            hasMore:
+              type: boolean
+              description: Whether there are more results available beyond maxResult limit
+              example: false
+
+    PaymentRecord:
+      type: object
+      required:
+        - transactionId
+        - productName
+        - payeeName
+        - amount
+        - paymentExecutionDate
+        - status
+        - createdAt
+      properties:
+        transactionId:
+          type: string
+          description: Unique identifier for the payment transaction
+          pattern: '^txn_pay_[a-zA-Z0-9]+$'
+          example: "txn_pay_9x8y7z6w5v4u3t2s"
+        productName:
+          type: string
+          description: Name/description of the product that was debited
+          example: "Complete Freedom Savings Account"
+        payeeName:
+          type: string
+          description: Name of the payee who received the payment
+          example: "John Doe"
+        amount:
+          type: number
+          format: decimal
+          description: Payment amount in dollars (up to 2 decimal places)
+          multipleOf: 0.01
+          example: 150.75
+        paymentReference:
+          type: string
+          description: Payment reference or description (if provided)
+          maxLength: 250
+          example: "Rent payment for January 2024"
+        paymentExecutionDate:
+          type: string
+          description: Date when the payment was executed (YYYYMMDD format)
+          pattern: '^[0-9]{8}$'
+          example: "20240115"
+        status:
+          type: string
+          description: Current status of the payment
+          enum: 
+            - "initiated"
+            - "scheduled" 
+            - "processing"
+            - "completed"
+            - "failed"
+          example: "completed"
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the payment was originally created
+          example: "2024-01-15T09:30:00Z"
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code
+          example: "VALIDATION_ERROR"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "The request contains invalid data"
+        details:
+          type: array
+          description: Detailed error information
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                example: "amount"
+              message:
+                type: string
+                example: "Amount must be a positive number greater than 1.00"
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token for authentication
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Payments
+    description: Operations related to payment processing 

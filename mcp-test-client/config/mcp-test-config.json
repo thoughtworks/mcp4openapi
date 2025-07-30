@@ -1,0 +1,53 @@
+{
+  "llm": {
+    "provider": "lmstudio",
+    "config": {
+      "baseUrl": "http://localhost:1234",
+      "model": "meta-llama-3.1-8b-instruct"
+    }
+  },
+  "llmProviders": {
+    "lmstudio": {
+      "description": "Real LLM via LM Studio local server",
+      "config": {
+        "baseUrl": "http://localhost:1234",
+        "model": "meta-llama-3.1-8b-instruct"
+      }
+    },
+    "gemini": {
+      "description": "Google Gemini API (not yet implemented)",
+      "config": {
+        "apiKey": "YOUR_GEMINI_API_KEY",
+        "model": "gemini-pro"
+      }
+    },
+    "anthropic": {
+      "description": "Anthropic Claude API (not yet implemented)",
+      "config": {
+        "apiKey": "YOUR_ANTHROPIC_API_KEY",
+        "model": "claude-3-sonnet-20240229"
+      }
+    },
+    "openai": {
+      "description": "OpenAI GPT API (not yet implemented)",
+      "config": {
+        "apiKey": "YOUR_OPENAI_API_KEY",
+        "model": "gpt-4"
+      }
+    }
+  },
+  "orchestrator": {
+    "maxRounds": 10,
+    "enableLogging": true,
+    "timeout": 30000
+  },
+  "mcpServers": {
+    "banking": {
+      "name": "banking-apis",
+      "connection": {
+        "type": "http",
+        "url": "http://localhost:4000"
+      }
+    }
+  }
+} 

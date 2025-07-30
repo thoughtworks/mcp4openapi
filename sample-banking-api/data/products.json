@@ -1,0 +1,49 @@
+{
+  "products": [
+    {
+      "productId": "SAV001ABC",
+      "productName": "Complete Freedom Savings Account",
+      "accountId": "1234567890",
+      "creditLimit": 5000,
+      "currentDrawdown": 1200.5,
+      "category": "Savings",
+      "interestCharged": 2.5
+    },
+    {
+      "productId": "CHQ002XYZ",
+      "productName": "Business Cheque Account",
+      "accountId": "1234567890",
+      "creditLimit": 10000,
+      "currentDrawdown": 500,
+      "category": "Card",
+      "interestCharged": 7.25
+    },
+    {
+      "productId": "SAV003DEF",
+      "productName": "Premium Savings Plus",
+      "accountId": "9876543210",
+      "creditLimit": 8000,
+      "currentDrawdown": 750,
+      "category": "Savings",
+      "interestCharged": 1.75
+    },
+    {
+      "productId": "CHQ004GHI",
+      "productName": "Everyday Cheque Account",
+      "accountId": "5555555555",
+      "creditLimit": 3000,
+      "currentDrawdown": 125,
+      "category": "Card",
+      "interestCharged": 5
+    },
+    {
+      "productId": "SAV005JKL",
+      "productName": "High Interest Savings",
+      "accountId": "9876543210",
+      "creditLimit": 15000,
+      "currentDrawdown": 450.25,
+      "category": "Savings",
+      "interestCharged": 3
+    }
+  ]
+}

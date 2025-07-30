@@ -1,0 +1,52 @@
+{
+  "name": "banking-api-server",
+  "version": "1.0.0",
+  "description": "Express.js server for Banking Payee Management API",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "server": "ts-node server/server.ts",
+    "server:dev": "nodemon server/server.ts",
+    "server:build": "tsc server/server.ts --outDir dist",
+    "server:start": "node dist/server.js",
+    "start": "npm run server",
+    "test:server": "ts-node test-server.ts",
+    "test:curl": "curl -X POST http://localhost:3001/auth/generate-token"
+  },
+  "keywords": [
+    "banking",
+    "api",
+    "server",
+    "express",
+    "typescript",
+    "openapi",
+    "nodejs"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.23",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/morgan": "^1.9.10",
+    "@types/node": "^20.0.0",
+    "@types/swagger-ui-express": "^4.1.8",
+    "@types/uuid": "^10.0.0",
+    "@types/yamljs": "^0.2.34",
+    "nodemon": "^3.1.10",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "axios": "^1.10.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "express-validator": "^7.2.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.1",
+    "swagger-ui-express": "^5.0.1",
+    "uuid": "^11.1.0",
+    "yamljs": "^0.3.0"
+  }
+}

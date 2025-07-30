@@ -1,0 +1,22 @@
+{
+  "servers": {
+    "banking-apis": {
+      "name": "Banking APIs MCP Server",
+      "description": "OpenAPI-based MCP server for banking operations",
+      "connection": {
+        "type": "http",
+        "url": "http://localhost:4000",
+        "healthEndpoint": "/health",
+        "infoEndpoint": "/info"
+      },
+      "enabled": true,
+      "timeout": 30000,
+      "retries": 3
+    }
+  },
+  "globalConfig": {
+    "defaultTimeout": 15000,
+    "enableLogging": true,
+    "logLevel": "info"
+  }
+} 

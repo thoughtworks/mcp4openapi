@@ -1,0 +1,86 @@
+{
+  "payees": [
+    {
+      "payeeId": "payee_7f8a9b2c1d3e4f5g",
+      "accountNumber": "1234567890",
+      "payeeAlias": "JohnDoe123",
+      "payeeName": "John Doe",
+      "payId": "0412345678",
+      "payeeCategories": [
+        "family",
+        "personal"
+      ],
+      "createdAt": "2023-12-01T10:30:00Z",
+      "updatedAt": "2023-12-01T10:30:00Z"
+    },
+    {
+      "payeeId": "payee_8g9h1i2j3k4l5m6n",
+      "accountNumber": "1234567890",
+      "payeeAlias": "MomTransfers",
+      "payeeName": "Margaret Doe",
+      "payeeAccountNumber": "987654",
+      "bsb": "123456",
+      "payeeCategories": [
+        "family"
+      ],
+      "createdAt": "2023-12-02T14:20:00Z",
+      "updatedAt": "2023-12-02T14:20:00Z"
+    },
+    {
+      "payeeId": "payee_9n8m7l6k5j4i3h2g",
+      "accountNumber": "1234567890",
+      "payeeAlias": "ElectricBill",
+      "payeeName": "Power Company Australia",
+      "payeeAccountNumber": "555666",
+      "bsb": "334455",
+      "payeeCategories": [
+        "utilities",
+        "business"
+      ],
+      "createdAt": "2023-12-03T09:15:00Z",
+      "updatedAt": "2023-12-03T09:15:00Z"
+    },
+    {
+      "payeeId": "payee_1a2b3c4d5e6f7g8h",
+      "accountNumber": "9876543210",
+      "payeeAlias": "SarahPay",
+      "payeeName": "Sarah Wilson",
+      "payId": "0498765432",
+      "payeeCategories": [
+        "friends",
+        "personal"
+      ],
+      "createdAt": "2023-12-04T16:45:00Z",
+      "updatedAt": "2023-12-04T16:45:00Z"
+    },
+    {
+      "payeeId": "payee_2h3g4f5e6d7c8b9a",
+      "accountNumber": "1234567890",
+      "payeeAlias": "GymMembership",
+      "payeeName": "Fitness First Australia",
+      "payeeAccountNumber": "111222",
+      "bsb": "667788",
+      "payeeCategories": [
+        "health",
+        "subscriptions"
+      ],
+      "createdAt": "2023-12-05T11:30:00Z",
+      "updatedAt": "2023-12-05T11:30:00Z"
+    },
+    {
+      "payeeId": "payee_3i4h5g6f7e8d9c1b",
+      "accountNumber": "5555555555",
+      "payeeAlias": "TechStore",
+      "payeeName": "Electronics Emporium",
+      "payId": "0433445566",
+      "payeeCategories": [
+        "shopping",
+        "technology"
+      ],
+      "createdAt": "2023-12-06T13:00:00Z",
+      "updatedAt": "2023-12-06T13:00:00Z"
+    }
+  ],
+  "nextPayeeId": 4,
+  "nextTransactionId": 1029
+}

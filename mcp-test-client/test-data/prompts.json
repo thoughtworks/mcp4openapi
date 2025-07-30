@@ -1,0 +1,28 @@
+{
+  "scenarios": [
+    {
+      "id": "fraud_investigation",
+      "name": "Fraud Investigation - Power Company Payment", 
+      "description": "Investigate a high-value utility payment using real sample data",
+      "userPrompt": "I need to investigate a $750 payment made to 'Power Company Australia' (payee_9n8m7l6k5j4i3h2g) from account 9876543210. Can you help me analyze this for potential fraud using the fraud analysis tools?"
+    },
+    {
+      "id": "loan_recommendation",
+      "name": "Loan Recommendation Based on Account History",
+      "description": "Recommend loan products based on actual account data",
+      "userPrompt": "Account 1234567890 wants a loan recommendation. They have products SAV001ABC and CHQ002XYZ. What loan options should I recommend based on their account history?"
+    },
+    {
+      "id": "payment_investigation",
+      "name": "Payment Search - Business Account",
+      "description": "Search for specific business payments using real transaction data",
+      "userPrompt": "I need to find all payments from account 1234567890 to business payees. Please search the payment history and show me what you find with regards to business related payments."
+    },
+    {
+      "id": "payee_profile_lookup",
+      "name": "Payee Profile Analysis - Family Payees",
+      "description": "Look up family payee profiles and analyze payment patterns",
+      "userPrompt": "Show me the profile details for John Doe (payee_7f8a9b2c1d3e4f5g) and Margaret Doe (payee_8g9h1i2j3k4l5m6n). I need to understand their payment patterns."
+    }
+  ]
+}
