@@ -81,12 +81,12 @@ npm run dev -- --specs ./examples/specs --config ./examples/mcp-config.json --ve
 ```
 
 ### 3. Start/Load you LLM in LM Studio
-Load and start you LLM in LM Studio.  This project assumes the LM Studio API will be running on http://localhost:1234
+Load and start your LLM in LM Studio.  This project assumes the LM Studio API will be running on http://localhost:1234
 
 If you need to change the URL, update the /examples/mcp-config.json file in the mcp-openapi app and restart it.
 
 ### 4. Testing or running the demo
-Refer to the mcp-client-test Readme to launch the demo/client.  It is menu driven with a number of pre-build test scenarios using the manufactured data in the sample banking api app.
+Once you've started all the different moving parts to test/demo.  Refer to the mcp-client-test Readme to launch the demo/client.  It is menu driven with a number of pre-build test scenarios using the manufactured data in the sample banking api app.
 
 ## 📋 Features
 
