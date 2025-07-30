@@ -1,4 +1,4 @@
-# API2MCP - Model Context Protocol wrapper for OpenAPI compliant endpoints
+# MCP-OpenAPI Model Context Protocol wrapper for OpenAPI compliant endpoints
 
 The main application mcp-openapi provides a generic MCP Server wrapper over any OpenAPI compliant endpoints.  It will, given the OpenAPI specs, generate MCP tools & resources with some sensible defaults and overridable via configuration.  It will also allow definition of additional MCP Prompts, via config.  It will hosts the MCP end points for all these MCP capabilities and integrate with the backend APIs as per the configuration.
 
