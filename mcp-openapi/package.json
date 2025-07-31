@@ -8,8 +8,7 @@
   },
   "type": "module",
   "scripts": {
-    "dev": "BANKING_API_TOKEN=mcp-service-token-demo-123 tsx src/cli.ts",
-    "dev:banking": "BANKING_API_TOKEN=mcp-service-token-demo-123 tsx src/cli.ts --specs ./examples/specs --config ./examples/mcp-config.json --prompts ./examples/prompts --verbose",
+    "dev": "BANKING_API_TOKEN=mcp-service-token-demo-123 tsx src/cli.ts --specs ./examples/specs --config ./examples/mcp-config.json --prompts ./examples/prompts --verbose",
     "dev:clean": "tsx src/cli.ts",
     "build": "tsc",
     "start": "node dist/cli.js",
@@ -21,7 +20,8 @@
     "test:msw": "jest tests/msw-integration.test.ts",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "sast": "semgrep scan"
   },
   "keywords": [
     "mcp",

@@ -80,14 +80,9 @@ npm install
 
 ### Development Commands
 
-**Development Mode with Hot Reload (Recommended):**
+**Development Mode with Hot Reload (Recommended), will use the examples folder containing banking examples:**
 ```bash
 npm run dev
-```
-
-**Development with Banking Examples:**
-```bash
-npm run dev -- --specs ./examples/specs --config ./examples/mcp-config.json --prompts ./examples/prompts --verbose
 ```
 
 **HTTP Mode for Testing:**
@@ -99,6 +94,11 @@ npm run start:http
 ```bash
 npm run build
 npm start
+```
+
+**Run Semgrep SAST**
+```bash
+npm run sast
 ```
 
 ### Development Environment Setup

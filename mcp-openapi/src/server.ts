@@ -121,7 +121,7 @@ export class MCPOpenAPIServer {
             console.log(`📋 Loaded OpenAPI spec: ${specId} (from ${file})`);
           }
         } catch (error) {
-          console.error(`❌ Error loading spec ${file}:`, (error as Error).message);
+          console.error(`❌ Error loading spec %s:`, file, (error as Error).message);
         }
       }
     }
@@ -150,7 +150,7 @@ export class MCPOpenAPIServer {
             console.log(`💬 Loaded prompt: ${promptSpec.name}`);
           }
         } catch (error) {
-          console.error(`❌ Error loading prompt ${file}:`, (error as Error).message);
+          console.error(`❌ Error loading prompt %s:`, file, (error as Error).message);
         }
       }
     }
@@ -664,7 +664,7 @@ export class MCPOpenAPIServer {
       };
     } catch (error) {
       // Handle network errors and other exceptions
-      console.error(`[ERROR] Tool execution failed for ${toolName}:`, (error as Error).message);
+      console.error(`[ERROR] Tool execution failed for %s:`, toolName, (error as Error).message);
       
       return {
         content: [{
@@ -852,7 +852,7 @@ export class MCPOpenAPIServer {
       };
     } catch (error) {
       // Handle network errors and other exceptions
-      console.error(`[ERROR] Resource read failed for ${uri}:`, (error as Error).message);
+      console.error(`[ERROR] Resource read failed for %s:`, uri, (error as Error).message);
       
       return {
         contents: [{
@@ -873,6 +873,8 @@ export class MCPOpenAPIServer {
     // Convert template URI to regex pattern
     // e.g., "banking-payees://banking/payees/{payeeId}" becomes "banking-payees://banking/payees/([^/]+)"
     const regexPattern = templateUri.replace(/\{[^}]+\}/g, '([^/]+)');
+
+    // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
     const regex = new RegExp(`^${regexPattern}$`);
     return regex.test(actualUri);
   }
