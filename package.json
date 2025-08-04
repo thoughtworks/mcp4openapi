@@ -1,0 +1,25 @@
+{
+  "name": "mcp4openapi",
+  "version": "1.0.0",
+  "description": "MCP 4 Open API Reference implementation with demo and sample backend",
+  "keywords": [
+    "MCP",
+    "OpenAPI",
+    "LLM"
+  ],
+  "homepage": "https://github.com/stevenpeh-tw/mcp-openapi#readme",
+  "bugs": {
+    "url": "https://github.com/stevenpeh-tw/mcp-openapi/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/stevenpeh-tw/mcp-openapi.git"
+  },
+  "license": "MIT",
+  "author": "Steven Peh",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm run test"
+  }
+}
