@@ -32,6 +32,9 @@ jobs:
   semgrep:
     name: Semgrep Scan
     runs-on: ubuntu-latest
+    container:
+      # A Docker image with Semgrep installed. Do not change this.
+      image: returntocorp/semgrep
     steps:
       # It also needs to check out the code to be able to scan it
       - name: Checkout repository
@@ -39,5 +42,5 @@ jobs:
 
       # Run the official Semgrep action
       - name: Run Semgrep
-        uses: returntocorp/semgrep-action@v1
+        # uses: returntocorp/semgrep-action@v1
       - run: semgrep scan
