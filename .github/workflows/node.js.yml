@@ -40,3 +40,4 @@ jobs:
       # Run the official Semgrep action
       - name: Run Semgrep
         uses: returntocorp/semgrep-action@v1
+      - run: semgrep scan
