@@ -39,4 +39,4 @@ jobs:
 
       # Run the official Semgrep action
       - name: Run Semgrep
-        uses: semgrep/semgrep-action@v2.6.0
+        uses: returntocorp/semgrep-action@v1
