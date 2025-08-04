@@ -28,6 +28,8 @@ jobs:
         cache: 'npm'
     - run: npm ci
     - run: npm test
+    - name: Detect secrets with Talisman in incoming commits
+      uses: carhartl/talisman-secrets-scan-action@v1.4.0
 
   semgrep:
     name: Semgrep Scan
