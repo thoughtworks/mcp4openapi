@@ -21,6 +21,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: Detect secrets with Talisman in incoming commits
+      uses: carhartl/talisman-secrets-scan-action@v1.4.0
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
       with:
@@ -28,8 +30,6 @@ jobs:
         cache: 'npm'
     - run: npm ci
     - run: npm test
-    - name: Detect secrets with Talisman in incoming commits
-      uses: carhartl/talisman-secrets-scan-action@v1.4.0
 
   semgrep:
     name: Semgrep Scan
