@@ -20,6 +20,6 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "test": "npm run test"
+    "test": "cd mcp-openapi && npm run test"
   }
 }
