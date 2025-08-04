@@ -38,9 +38,9 @@ jobs:
     steps:
       # It also needs to check out the code to be able to scan it
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       # Run the official Semgrep action
       - name: Run Semgrep
         # uses: returntocorp/semgrep-action@v1
-      - run: semgrep scan
+        run: semgrep scan
