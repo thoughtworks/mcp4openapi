@@ -1,7 +1,7 @@
 # This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
 
-name: Node.js CI
+name: Node.js CI & Semgrep Scan
 
 on:
   push:
@@ -28,3 +28,15 @@ jobs:
         cache: 'npm'
     - run: npm ci
     - run: npm test
+
+  semgrep:
+    name: Semgrep Scan
+    runs-on: ubuntu-latest
+    steps:
+      # It also needs to check out the code to be able to scan it
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Run the official Semgrep action
+      - name: Run Semgrep
+        uses: semgrep/semgrep-action@v2
