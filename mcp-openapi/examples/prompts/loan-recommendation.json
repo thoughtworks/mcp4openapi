@@ -1,0 +1,22 @@
+{
+  "name": "loan_recommendation",
+  "description": "Recommend appropriate loan products based on customer profile and financial goals",
+  "arguments": [
+    {
+      "name": "customer_profile",
+      "description": "Customer demographics, credit score, income, employment",
+      "required": true
+    },
+    {
+      "name": "financial_goals",
+      "description": "Customer's stated financial objectives and loan purpose",
+      "required": true
+    },
+    {
+      "name": "account_history",
+      "description": "Customer's banking history and relationship",
+      "required": false
+    }
+  ],
+  "template": "You are a banking loan specialist. Analyze this customer profile and recommend appropriate loan products:\n\nCUSTOMER PROFILE:\n{{customer_profile}}\n\nFINANCIAL GOALS:\n{{financial_goals}}\n\n{{#account_history}}BANKING HISTORY:\n{{account_history}}\n{{/account_history}}\n\nFOLLOW THIS RECOMMENDATION FRAMEWORK:\n\nSTEP 1: CREDITWORTHINESS ASSESSMENT\n- Evaluate credit score and history\n- Analyze debt-to-income ratio\n- Review employment stability\n- Assess collateral availability\n\nSTEP 2: LOAN PURPOSE ANALYSIS\n- Match loan type to stated purpose\n- Evaluate loan amount reasonableness\n- Consider repayment timeline preferences\n\nSTEP 3: PRODUCT MATCHING\n- Personal loans for unsecured needs\n- Mortgages for home purchases\n- Auto loans for vehicle financing\n- Business loans for commercial purposes\n- Credit lines for flexible access\n\nSTEP 4: RISK ASSESSMENT\n- Calculate probability of default\n- Determine appropriate interest rate tier\n- Identify required documentation\n- Set loan terms and conditions\n\nSTEP 5: REGULATORY COMPLIANCE\n- Verify lending regulations compliance\n- Check fair lending requirements\n- Ensure proper disclosures\n\nProvide recommendations in this JSON format:\n{\n  \"recommended_products\": [\n    {\n      \"product_type\": \"string\",\n      \"loan_amount_range\": \"string\",\n      \"interest_rate_range\": \"string\",\n      \"term_options\": [...],\n      \"key_features\": [...],\n      \"eligibility_match\": \"HIGH|MEDIUM|LOW\"\n    }\n  ],\n  \"approval_likelihood\": \"HIGH|MEDIUM|LOW\",\n  \"required_documentation\": [...],\n  \"alternative_options\": [...],\n  \"next_steps\": [...],\n  \"risk_factors\": [...]\n}"
+} 

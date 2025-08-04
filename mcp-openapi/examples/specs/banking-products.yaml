@@ -1,0 +1,188 @@
+openapi: 3.0.3
+info:
+  title: Banking Product API
+  description: API for retrieving product information in a banking system
+  version: 1.0.0
+  contact:
+    name: Banking API Support
+    email: api-support@bank.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.bank.com/v1
+    description: Production server
+  - url: https://staging-api.bank.com/v1
+    description: Staging server
+
+paths:
+  /v1/banking/products/{productId}:
+    get:
+      summary: Fetch product by productId
+      description: Retrieve a product by its unique productId
+      operationId: getProductById
+      tags:
+        - Products
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          description: The unique identifier of the product
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9]+$'
+            maxLength: 50
+            example: "SAV001ABC"
+      responses:
+        '200':
+          description: Product details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/banking/products:
+    get:
+      summary: Fetch products by accountId
+      description: Retrieve all products belonging to a specific accountId
+      operationId: getProductsByAccountId
+      tags:
+        - Products
+      parameters:
+        - name: accountId
+          in: query
+          required: true
+          description: The accountId to retrieve products for
+          schema:
+            type: string
+            pattern: '^[0-9]+$'
+            example: "1234567890"
+      responses:
+        '200':
+          description: List of products for the account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductListResponse'
+        '400':
+          description: Bad request - Invalid accountId
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    Product:
+      type: object
+      required:
+        - productId
+        - productName
+        - accountId
+        - creditLimit
+        - currentDrawdown
+        - category
+        - interestCharged
+      properties:
+        productId:
+          type: string
+          description: Unique identifier for the product
+          pattern: '^[a-zA-Z0-9]+$'
+          maxLength: 50
+          example: "SAV001ABC"
+        productName:
+          type: string
+          description: Name of the product
+          pattern: '^[a-zA-Z0-9 ]+$'
+          maxLength: 200
+          example: "Complete Freedom Savings Account"
+        accountId:
+          type: string
+          description: The account number that owns this product
+          pattern: '^[0-9]+$'
+          example: "1234567890"
+        creditLimit:
+          type: number
+          format: decimal
+          description: Credit limit of the product (minimum 100.00, up to 2 decimal places)
+          minimum: 100.00
+          multipleOf: 0.01
+          example: 5000.00
+        currentDrawdown:
+          type: number
+          format: decimal
+          description: Amount drawn down (more than 0, less than creditLimit, up to 2 decimal places)
+          minimum: 0.01
+          exclusiveMinimum: true
+          maximum: 5000.00 # This should be dynamically set to creditLimit in implementation
+          multipleOf: 0.01
+          example: 1200.50
+        category:
+          type: string
+          description: Product category
+          enum: [Card, Loan, Savings, Fixed]
+          example: "Card"
+        interestCharged:
+          type: number
+          format: decimal
+          description: Interest charged (0.00 to 100.00, up to 2 decimal places)
+          minimum: 0.00
+          maximum: 100.00
+          multipleOf: 0.01
+          example: 7.25
+    ProductListResponse:
+      type: object
+      required:
+        - products
+      properties:
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code
+          example: "VALIDATION_ERROR"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "The request contains invalid data"
+        details:
+          type: array
+          description: Detailed error information
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                example: "accountId"
+              message:
+                type: string
+                example: "Must be a valid account number"
+
+securitySchemes:
+  BearerAuth:
+    type: http
+    scheme: bearer
+    bearerFormat: JWT
+    description: JWT token for authentication
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Products
+    description: Operations related to product information 

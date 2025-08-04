@@ -109,11 +109,3 @@ jspm_packages/
 
 # TernJS port file
 .tern-port
-
-# Test files and configs (keep examples)
-specs/
-prompts/
-mcp-config.json
-
-# But keep example files
-!examples/ 

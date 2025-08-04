@@ -1,0 +1,489 @@
+openapi: 3.0.3
+info:
+  title: Banking Payee Management API
+  description: API for managing payee profiles in a banking system
+  version: 1.0.0
+  contact:
+    name: Banking API Support
+    email: api-support@bank.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.bank.com/v1
+    description: Production server
+  - url: https://staging-api.bank.com/v1
+    description: Staging server
+
+paths:
+  /v1/banking/payees:
+    post:
+      summary: Create a new payee profile
+      description: |
+        Creates a new payee profile for a banking account. The payee can be identified either by:
+        - Pay ID (phone number), OR
+        - Account number and BSB combination
+        
+        At least one of these identification methods must be provided.
+      operationId: createPayeeProfile
+      tags:
+        - Payees
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePayeeRequest'
+            examples:
+              payid_example:
+                summary: Payee with Pay ID
+                value:
+                  accountNumber: "1234567890"
+                  payeeAlias: "JohnDoe123"
+                  payeeName: "John Doe"
+                  payId: "0412345678"
+                  payeeCategories: ["family", "personal"]
+              account_bsb_example:
+                summary: Payee with Account and BSB
+                value:
+                  accountNumber: "1234567890"
+                  payeeAlias: "CompanyABC"
+                  payeeName: "ABC Company Pty Ltd"
+                  payeeAccountNumber: "123456"
+                  bsb: "123456"
+                  payeeCategories: ["business", "utilities"]
+      responses:
+        '201':
+          description: Payee profile created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatePayeeResponse'
+              example:
+                payeeId: "payee_7f8a9b2c1d3e4f5g"
+                transactionId: "txn_9x8y7z6w5v4u3t2s"
+                status: "created"
+                message: "Payee profile created successfully"
+        '400':
+          description: Bad request - Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "VALIDATION_ERROR"
+                message: "Either payId or both payeeAccountNumber and bsb must be provided"
+                details:
+                  - field: "payId"
+                    message: "Required when payeeAccountNumber and bsb are not provided"
+        '409':
+          description: Conflict - Payee alias already exists for this account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "DUPLICATE_PAYEE_ALIAS"
+                message: "Payee alias already exists for this account"
+        '422':
+          description: Unprocessable entity - Business rule violation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "INTERNAL_ERROR"
+                message: "An unexpected error occurred while processing your request"
+
+    get:
+      summary: List payee profiles
+      description: Retrieve all payee profiles for a specific account
+      operationId: listPayeeProfiles
+      tags:
+        - Payees
+      parameters:
+        - name: accountNumber
+          in: query
+          required: true
+          description: The account number to retrieve payees for
+          schema:
+            type: string
+            pattern: '^[0-9]+$'
+            example: "1234567890"
+        - name: category
+          in: query
+          required: false
+          description: Filter payees by category
+          schema:
+            type: string
+            pattern: '^[a-zA-Z]+$'
+            example: "family"
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of payees to return (default 50)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: offset
+          in: query
+          required: false
+          description: Number of payees to skip (default 0)
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: List of payee profiles
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PayeeListResponse'
+        '400':
+          description: Bad request - Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/banking/payees/{payeeId}:
+    get:
+      summary: Get a specific payee profile
+      description: Retrieve details of a specific payee profile by its ID
+      operationId: getPayeeProfile
+      tags:
+        - Payees
+      parameters:
+        - name: payeeId
+          in: path
+          required: true
+          description: The unique identifier of the payee
+          schema:
+            type: string
+            pattern: '^payee_[a-zA-Z0-9]+$'
+            example: "payee_7f8a9b2c1d3e4f5g"
+      responses:
+        '200':
+          description: Payee profile details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PayeeProfile'
+        '404':
+          description: Payee not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      summary: Update a payee profile
+      description: Update an existing payee profile
+      operationId: updatePayeeProfile
+      tags:
+        - Payees
+      parameters:
+        - name: payeeId
+          in: path
+          required: true
+          description: The unique identifier of the payee
+          schema:
+            type: string
+            pattern: '^payee_[a-zA-Z0-9]+$'
+            example: "payee_7f8a9b2c1d3e4f5g"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePayeeRequest'
+      responses:
+        '200':
+          description: Payee profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PayeeProfile'
+        '404':
+          description: Payee not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: Delete a payee profile
+      description: Permanently delete a payee profile
+      operationId: deletePayeeProfile
+      tags:
+        - Payees
+      parameters:
+        - name: payeeId
+          in: path
+          required: true
+          description: The unique identifier of the payee
+          schema:
+            type: string
+            pattern: '^payee_[a-zA-Z0-9]+$'
+            example: "payee_7f8a9b2c1d3e4f5g"
+      responses:
+        '204':
+          description: Payee profile deleted successfully
+        '404':
+          description: Payee not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Cannot delete payee - has pending transactions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    CreatePayeeRequest:
+      type: object
+      required:
+        - accountNumber
+        - payeeAlias
+        - payeeName
+      properties:
+        accountNumber:
+          type: string
+          description: The account number that will own this payee profile
+          pattern: '^[0-9]+$'
+          example: "1234567890"
+        payeeAlias:
+          type: string
+          description: Unique alias for the payee (alphanumeric only)
+          pattern: '^[a-zA-Z0-9]+$'
+          maxLength: 20
+          example: "JohnDoe123"
+        payeeName:
+          type: string
+          description: Full name of the payee
+          maxLength: 100
+          example: "John Doe"
+        payId:
+          type: string
+          description: Phone number as Pay ID (10 digits only)
+          pattern: '^[0-9]{10}$'
+          example: "0412345678"
+        payeeAccountNumber:
+          type: string
+          description: Payee's account number (6 digits only)
+          pattern: '^[0-9]{6}$'
+          example: "123456"
+        bsb:
+          type: string
+          description: Bank State Branch code (6 digits only)
+          pattern: '^[0-9]{6}$'
+          example: "123456"
+        payeeCategories:
+          type: array
+          description: List of category keywords (alphabets only)
+          items:
+            type: string
+            pattern: '^[a-zA-Z]+$'
+            example: "family"
+          example: ["family", "personal", "utilities"]
+      anyOf:
+        - required: ["payId"]
+        - required: ["payeeAccountNumber", "bsb"]
+
+    UpdatePayeeRequest:
+      type: object
+      properties:
+        payeeAlias:
+          type: string
+          description: Unique alias for the payee (alphanumeric only)
+          pattern: '^[a-zA-Z0-9]+$'
+          maxLength: 20
+          example: "JohnDoe456"
+        payeeName:
+          type: string
+          description: Full name of the payee
+          maxLength: 100
+          example: "John Smith"
+        payeeCategories:
+          type: array
+          description: List of category keywords (alphabets only)
+          items:
+            type: string
+            pattern: '^[a-zA-Z]+$'
+          example: ["family", "personal"]
+
+    CreatePayeeResponse:
+      type: object
+      required:
+        - payeeId
+        - transactionId
+        - status
+        - message
+      properties:
+        payeeId:
+          type: string
+          description: Unique identifier for the created payee
+          pattern: '^payee_[a-zA-Z0-9]+$'
+          example: "payee_7f8a9b2c1d3e4f5g"
+        transactionId:
+          type: string
+          description: Unique identifier for the creation transaction
+          pattern: '^txn_[a-zA-Z0-9]+$'
+          example: "txn_9x8y7z6w5v4u3t2s"
+        status:
+          type: string
+          enum: ["created"]
+          example: "created"
+        message:
+          type: string
+          example: "Payee profile created successfully"
+
+    PayeeProfile:
+      type: object
+      required:
+        - payeeId
+        - accountNumber
+        - payeeAlias
+        - payeeName
+        - createdAt
+        - updatedAt
+      properties:
+        payeeId:
+          type: string
+          description: Unique identifier for the payee
+          pattern: '^payee_[a-zA-Z0-9]+$'
+          example: "payee_7f8a9b2c1d3e4f5g"
+        accountNumber:
+          type: string
+          description: The account number that owns this payee profile
+          pattern: '^[0-9]+$'
+          example: "1234567890"
+        payeeAlias:
+          type: string
+          description: Alias for the payee
+          example: "JohnDoe123"
+        payeeName:
+          type: string
+          description: Full name of the payee
+          example: "John Doe"
+        payId:
+          type: string
+          description: Phone number as Pay ID (when applicable)
+          pattern: '^[0-9]{10}$'
+          example: "0412345678"
+        payeeAccountNumber:
+          type: string
+          description: Payee's account number (when applicable)
+          pattern: '^[0-9]{6}$'
+          example: "123456"
+        bsb:
+          type: string
+          description: Bank State Branch code (when applicable)
+          pattern: '^[0-9]{6}$'
+          example: "123456"
+        payeeCategories:
+          type: array
+          description: List of category keywords
+          items:
+            type: string
+            example: "family"
+          example: ["family", "personal"]
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the payee was created
+          example: "2023-12-01T10:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the payee was last updated
+          example: "2023-12-01T10:30:00Z"
+
+    PayeeListResponse:
+      type: object
+      required:
+        - payees
+        - pagination
+      properties:
+        payees:
+          type: array
+          items:
+            $ref: '#/components/schemas/PayeeProfile'
+        pagination:
+          type: object
+          required:
+            - total
+            - limit
+            - offset
+          properties:
+            total:
+              type: integer
+              description: Total number of payees
+              example: 25
+            limit:
+              type: integer
+              description: Number of payees requested
+              example: 10
+            offset:
+              type: integer
+              description: Number of payees skipped
+              example: 0
+            hasMore:
+              type: boolean
+              description: Whether there are more payees available
+              example: true
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code
+          example: "VALIDATION_ERROR"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "The request contains invalid data"
+        details:
+          type: array
+          description: Detailed error information
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                example: "payeeAlias"
+              message:
+                type: string
+                example: "Must be alphanumeric and no more than 20 characters"
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token for authentication
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Payees
+    description: Operations related to payee profile management 
