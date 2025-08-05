@@ -62,10 +62,37 @@ mcp-openapi-server --specs ./my-specs --config ./my-config.json --prompts ./my-p
 # Override the backend API base URL (takes precedence over config file)
 mcp-openapi-server --base-url https://api.example.com --specs ./specs --verbose
 
-# For different environments
+# For different environments (stdio mode)
 mcp-openapi-server --base-url http://localhost:8080 --specs ./specs    # Development
 mcp-openapi-server --base-url https://staging-api.com --specs ./specs  # Staging
 mcp-openapi-server --base-url https://api.production.com --specs ./specs  # Production
+
+# For HTTP mode deployments
+mcp-openapi-server --http --base-url https://api.example.com --specs ./specs --port 4000
+```
+
+## 🔧 Mode Selection Guide
+
+**When to use Stdio Mode (Default):**
+- ✅ IDE integration (Cursor, Claude Desktop, VS Code with MCP extensions)
+- ✅ Production MCP server deployment
+- ✅ Direct MCP client connections
+- ✅ Microservices with MCP protocol
+
+**When to use HTTP Mode (`--http` flag):**
+- ✅ Web application integration
+- ✅ Development and testing with HTTP clients
+- ✅ Health checks and monitoring endpoints
+- ✅ Docker deployments with port mapping
+- ✅ Load balancing and reverse proxy setups
+
+**Quick Mode Selection:**
+```bash
+# For IDEs and MCP clients (recommended)
+mcp-openapi-server
+
+# For web APIs and testing
+mcp-openapi-server --http
 ```
 
 ## Development Mode
@@ -80,17 +107,29 @@ npm install
 
 ### Development Commands
 
-**Development Mode with Hot Reload (Recommended), will use the examples folder containing banking examples:**
+**Development Mode with Hot Reload (HTTP mode - Recommended for testing):**
 ```bash
 npm run dev
 ```
 
-**HTTP Mode for Testing:**
+**Development Mode (Stdio mode for MCP integration testing):**
 ```bash
+npm run dev:stdio
+```
+
+**Production HTTP Mode:**
+```bash
+npm run build
 npm run start:http
 ```
 
-**Build and Run:**
+**Production Stdio Mode (MCP Integration):**
+```bash
+npm run build
+npm run start:stdio
+```
+
+**Legacy Start Command (HTTP mode):**
 ```bash
 npm run build
 npm start
@@ -103,14 +142,14 @@ npm run sast
 
 ### Development Environment Setup
 
-**For stdio Mode (IDE Integration):**
+**For Stdio Mode (IDE Integration):**
 ```bash
 # Set environment variables for authentication
 export BANKING_API_TOKEN="your-service-token-here"
 export USER_API_TOKEN="your-user-token-here"
 
-# Run with verbose logging
-npm run dev -- --verbose
+# Run in stdio mode for MCP testing
+npm run dev:stdio
 ```
 
 **For HTTP Mode (API Testing):**
@@ -126,20 +165,42 @@ curl http://localhost:4000/info
 ```
 
 ### Expected Output
-When running in development mode, you should see:
+
+**HTTP Mode (`npm run dev` or `--http` flag):**
 ```
 🚀 MCP OpenAPI Server running on port 4000
 📊 Health check: http://localhost:4000/health
 ℹ️  Server info: http://localhost:4000/info
-📋 Loaded 3 specs, 6 tools, 3 resources, 2 prompts
+📋 Loaded 3 specs, 4 tools, 5 resources, 2 prompts
 ```
+
+**Stdio Mode (`npm run dev:stdio` or default CLI):**
+```
+🔌 MCP OpenAPI Server running on stdio
+🌐 Using base URL: http://localhost:3001 (from config file)
+✅ Loaded 3 specs, 4 tools, 5 resources, 2 prompts
+```
+
+### Available npm Scripts
+
+| Script | Mode | Purpose |
+|--------|------|---------|
+| `npm run dev` | **HTTP** | Development with hot reload and web interface |
+| `npm run dev:stdio` | **Stdio** | Development for MCP integration testing |
+| `npm run start` | **HTTP** | Production HTTP server (legacy) |
+| `npm run start:stdio` | **Stdio** | Production MCP server (stdio mode) |
+| `npm run start:http` | **HTTP** | Production HTTP server (explicit) |
+| `npm run build` | - | Build TypeScript to JavaScript |
+| `npm run test` | - | Run all tests |
 
 ### Development Tips
 
 - **Hot Reload**: The `npm run dev` command uses `tsx` for automatic TypeScript compilation and hot reloading
-- **Verbose Logging**: Add `--verbose` flag to see detailed debug information
+- **MCP Testing**: Use `npm run dev:stdio` to test MCP integration locally
+- **Verbose Logging**: Enabled by default, add `--verbose=false` to disable
 - **Banking Examples**: Use the pre-configured banking examples in `./examples/` for testing
 - **Authentication Testing**: Set environment variables for token passthrough testing
+- **Mode Selection**: Choose stdio for IDE integration, HTTP for web APIs
 
 ## Usage Modes
 
@@ -157,14 +218,17 @@ Run as an independent server process, perfect for:
 # Install globally
 npm install -g mcp-openapi-server
 
-# Run in stdio mode (for IDE integration)
+# Run in stdio mode (default - for IDE integration)
 mcp-openapi-server --specs ./specs --config ./mcp-config.json
 
-# Run in HTTP mode (for web integration)
+# Run in HTTP mode (for web integration and testing)
 mcp-openapi-server --http --port 4000 --specs ./specs --config ./mcp-config.json
 
 # Run with custom base URL (overrides config file setting)
 mcp-openapi-server --base-url https://api.example.com --specs ./specs --config ./mcp-config.json
+
+# Stdio mode with custom base URL (for production MCP servers)
+mcp-openapi-server --base-url https://api.production.com --specs ./specs --config ./mcp-config.json
 ```
 
 #### Docker Usage
@@ -172,8 +236,11 @@ mcp-openapi-server --base-url https://api.example.com --specs ./specs --config .
 # Build Docker image
 docker build -t mcp-openapi-server .
 
-# Run container
+# Run container in HTTP mode (for web deployment)
 docker run -p 4000:4000 -v ./specs:/app/specs -v ./config:/app/config mcp-openapi-server --http --port 4000
+
+# Run container in stdio mode (for MCP integration - requires interactive mode)
+docker run -i -v ./specs:/app/specs -v ./config:/app/config mcp-openapi-server
 ```
 
 ### 2. Library Integration
@@ -199,8 +266,11 @@ const mcpServer = new MCPOpenAPIServer({
 
 await mcpServer.initialize();
 
-// Run in HTTP mode
-await mcpServer.runHttp(4000);
+// Run in stdio mode (default - for MCP integration)
+await mcpServer.runStdio();
+
+// OR run in HTTP mode (for web integration)
+// await mcpServer.runHttp(4000);
 ```
 
 #### Express.js Integration
@@ -535,15 +605,19 @@ interface ServerOptions {
 
 ```
 Options:
-  -s, --specs <dir>     Directory containing OpenAPI specifications (default: "./specs")
-  -c, --config <file>   Configuration file path (default: "./mcp-config.json")  
-  -p, --prompts <dir>   Directory containing prompt specifications (default: "./prompts")
+  -s, --specs <dir>     Directory containing OpenAPI specifications (default: "./examples/specs")
+  -c, --config <file>   Configuration file path (default: "./examples/mcp-config.json")  
+  -p, --prompts <dir>   Directory containing prompt specifications (default: "./examples/prompts")
   --port <number>       Port for HTTP server mode (default: "4000")
   --base-url <url>      Base URL for backend APIs (overrides config file)
-  --http                Run in HTTP server mode instead of stdio
-  -v, --verbose         Enable verbose logging
+  --http                Run in HTTP server mode instead of stdio (default: false)
+  -v, --verbose         Enable verbose logging (default: true)
   -h, --help            Display help for command
 ```
+
+**Mode Selection:**
+- **Default (no `--http` flag):** Stdio mode - ideal for IDE integration (Cursor, Claude Desktop)
+- **With `--http` flag:** HTTP mode - ideal for web integration, testing, and standalone deployment
 
 ## HTTP Endpoints (HTTP Mode)
 

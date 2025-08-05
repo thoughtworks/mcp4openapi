@@ -13,22 +13,23 @@
       "specId": "banking-payments",
       "path": "/v1/banking/payments",
       "method": "get",
-      "type": "resource",
-      "toolName": "get_payments",
+      "type": "tool",
+      "toolName": "banking-payments_get_payments",
       "description": "Search payments by various criteria. CRITICAL: This API has NO category or type parameters. Available parameters ONLY: accountId, payeeId, amount, payeeName (exact names only), productName, startDate, endDate, maxResult. For business payment searches: (1) FIRST call this with accountId parameter ONLY, (2) Get payment results containing payeeId fields, (3) THEN call payee resources for EACH payeeId to get category information, (4) FINALLY filter results where payee.category='business'. DO NOT use non-existent parameters like 'category' or 'type'. DO NOT use payeeName='business' - that searches for a payee literally named 'business'."
     },
     {
       "specId": "banking-payees",
       "path": "/v1/banking/payees",
       "method": "get", 
-      "type": "resource",
+      "type": "tool",
       "description": "ESSENTIAL for business payment analysis: List payee profiles with category information. This resource contains the critical 'category' field (business, personal, family, utilities, etc.) that payment records lack. WORKFLOW: After getting payment data, use this resource to get category info for multiple payees. Supports 'category' parameter for direct filtering (e.g., category='business'). Use this as step 2 in business payment analysis workflow."
     },
     {
       "specId": "banking-payees", 
       "path": "/v1/banking/payees/{payeeId}",
       "method": "get",
-      "type": "resource", 
+      "type": "tool",
+      "toolName": "banking-payees_get_payee_by_id",
       "description": "REQUIRED for individual payee category lookup: Get specific payee details including the essential 'category' field. WORKFLOW: After getting payment results, call this resource for each payeeId found in payments to determine if that payee is categorized as 'business', 'personal', etc. This is step 2b in business payment analysis - get individual payee categories to filter business payments."
     }
   ]

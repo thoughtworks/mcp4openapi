@@ -47,7 +47,7 @@ describe('MSW Integration Test', () => {
   test('should mock HTTP request with MSW and execute payment tool', async () => {
     // Set up MSW mock for the banking API
     server.use(
-      http.post('http://localhost:3001/v1/banking/payments', () => {
+      http.post('http://localhost:3001/v1/banking/payments/payTo', () => {
         return HttpResponse.json({
           transactionId: 'txn_msw_test_123',
           productName: 'Complete Freedom Savings Account',
@@ -60,7 +60,7 @@ describe('MSW Integration Test', () => {
     );
 
     // Execute the tool
-    const result = await (mcpServer as any).executeTool('banking-payments_post__v1_banking_payments_payTo', {
+    const result = await (mcpServer as any).executeTool('banking-payments_create_banking_payments_payTo', {
       accountNumber: '1234567890',
       productId: 'SAV001ABC',
       payeeId: 'payee_test123',
@@ -80,7 +80,7 @@ describe('MSW Integration Test', () => {
   test('should mock HTTP error response with MSW', async () => {
     // Set up MSW mock for API error
     server.use(
-      http.post('http://localhost:3001/v1/banking/payments', () => {
+      http.post('http://localhost:3001/v1/banking/payments/payTo', () => {
         return HttpResponse.json({
           error: 'VALIDATION_ERROR',
           message: 'Invalid payment amount'
@@ -89,7 +89,7 @@ describe('MSW Integration Test', () => {
     );
 
     // Execute the tool and verify structured error response
-    const result = await (mcpServer as any).executeTool('banking-payments_post__v1_banking_payments_payTo', {
+    const result = await (mcpServer as any).executeTool('banking-payments_create_banking_payments_payTo', {
       accountNumber: '1234567890',
       productId: 'SAV001ABC',
       payeeId: 'payee_test123',
@@ -105,7 +105,7 @@ describe('MSW Integration Test', () => {
     expect(errorData.error).toBe('HTTP_ERROR');
     expect(errorData.status).toBe(400);
     expect(errorData.message).toBe('HTTP 400: Bad Request');
-    expect(errorData.tool).toBe('banking-payments_post__v1_banking_payments_payTo');
+    expect(errorData.tool).toBe('banking-payments_create_banking_payments_payTo');
     expect(errorData.details).toEqual({
       error: 'VALIDATION_ERROR',
       message: 'Invalid payment amount'
@@ -149,7 +149,7 @@ describe('MSW Integration Test', () => {
     test('should fail with 401 when no authentication token is provided', async () => {
       // Set up MSW mock to check for Authorization header and return 401 if missing
       server.use(
-        http.post('http://localhost:3001/v1/banking/payments', ({ request }) => {
+        http.post('http://localhost:3001/v1/banking/payments/payTo', ({ request }) => {
           const authHeader = request.headers.get('Authorization');
           
           if (!authHeader) {
@@ -166,7 +166,7 @@ describe('MSW Integration Test', () => {
       );
 
       // Execute tool without any authentication
-      const result = await (mcpServer as any).executeTool('banking-payments_post__v1_banking_payments_payTo', {
+      const result = await (mcpServer as any).executeTool('banking-payments_create_banking_payments_payTo', {
         accountNumber: '1234567890',
         productId: 'SAV001ABC',
         payeeId: 'payee_test123',
@@ -183,7 +183,7 @@ describe('MSW Integration Test', () => {
       expect(errorData.status).toBe(401);
       expect(errorData.message).toBe('No authentication token provided');
       expect(errorData.suggestion).toBe('Check your API token or re-authenticate');
-      expect(errorData.tool).toBe('banking-payments_post__v1_banking_payments_payTo');
+      expect(errorData.tool).toBe('banking-payments_create_banking_payments_payTo');
     });
 
     test('should successfully pass through user token to backend API', async () => {
@@ -192,7 +192,7 @@ describe('MSW Integration Test', () => {
 
       // Set up MSW mock to capture and validate the Authorization header
       server.use(
-        http.post('http://localhost:3001/v1/banking/payments', ({ request }) => {
+        http.post('http://localhost:3001/v1/banking/payments/payTo', ({ request }) => {
           receivedAuthHeader = request.headers.get('Authorization');
           
           // Validate that we received the expected user token
@@ -214,7 +214,7 @@ describe('MSW Integration Test', () => {
       // Execute tool with user context
       const userContext = { token: userToken };
       const result = await (mcpServer as any).executeTool(
-        'banking-payments_post__v1_banking_payments_payTo', 
+        'banking-payments_create_banking_payments_payTo', 
         {
           accountNumber: '1234567890',
           productId: 'SAV001ABC',
@@ -245,7 +245,7 @@ describe('MSW Integration Test', () => {
 
       // Set up MSW mock to capture and validate the Authorization header
       server.use(
-        http.post('http://localhost:3001/v1/banking/payments', ({ request }) => {
+        http.post('http://localhost:3001/v1/banking/payments/payTo', ({ request }) => {
           receivedAuthHeader = request.headers.get('Authorization');
           
           // Validate that we received the expected service token
@@ -265,7 +265,7 @@ describe('MSW Integration Test', () => {
       );
 
       // Execute tool without user context (should use service token)
-      const result = await (mcpServer as any).executeTool('banking-payments_post__v1_banking_payments_payTo', {
+      const result = await (mcpServer as any).executeTool('banking-payments_create_banking_payments_payTo', {
         accountNumber: '1234567890',
         productId: 'SAV001ABC',
         payeeId: 'payee_test123',
@@ -294,7 +294,7 @@ describe('MSW Integration Test', () => {
 
       // Set up MSW mock to capture the Authorization header
       server.use(
-        http.post('http://localhost:3001/v1/banking/payments', ({ request }) => {
+        http.post('http://localhost:3001/v1/banking/payments/payTo', ({ request }) => {
           receivedAuthHeader = request.headers.get('Authorization');
           
           if (receivedAuthHeader === `Bearer ${userToken}`) {
@@ -321,7 +321,7 @@ describe('MSW Integration Test', () => {
       // Execute tool with user context (should prioritize user token)
       const userContext = { token: userToken };
       const result = await (mcpServer as any).executeTool(
-        'banking-payments_post__v1_banking_payments_payTo',
+        'banking-payments_create_banking_payments_payTo',
         {
           accountNumber: '1234567890',
           productId: 'SAV001ABC',
@@ -395,7 +395,7 @@ describe('MSW Integration Test', () => {
       const userToken = 'expired-user-token-456';
 
       server.use(
-        http.post('http://localhost:3001/v1/banking/payments', ({ request }) => {
+        http.post('http://localhost:3001/v1/banking/payments/payTo', ({ request }) => {
           const authHeader = request.headers.get('Authorization');
           
           if (authHeader === `Bearer ${userToken}`) {
@@ -411,7 +411,7 @@ describe('MSW Integration Test', () => {
 
       const userContext = { token: userToken };
       const result = await (mcpServer as any).executeTool(
-        'banking-payments_post__v1_banking_payments_payTo',
+        'banking-payments_create_banking_payments_payTo',
         {
           accountNumber: '1234567890',
           productId: 'SAV001ABC',
@@ -431,14 +431,14 @@ describe('MSW Integration Test', () => {
       expect(errorData.status).toBe(401);
       expect(errorData.message).toBe('Invalid or expired authentication token');
       expect(errorData.suggestion).toBe('Check your API token or re-authenticate');
-      expect(errorData.tool).toBe('banking-payments_post__v1_banking_payments_payTo');
+      expect(errorData.tool).toBe('banking-payments_create_banking_payments_payTo');
     });
 
     test('should handle 403 permission error with structured response', async () => {
       const userToken = 'limited-permissions-token-789';
 
       server.use(
-        http.post('http://localhost:3001/v1/banking/payments', ({ request }) => {
+        http.post('http://localhost:3001/v1/banking/payments/payTo', ({ request }) => {
           const authHeader = request.headers.get('Authorization');
           
           if (authHeader === `Bearer ${userToken}`) {
@@ -454,7 +454,7 @@ describe('MSW Integration Test', () => {
 
       const userContext = { token: userToken };
       const result = await (mcpServer as any).executeTool(
-        'banking-payments_post__v1_banking_payments_payTo',
+        'banking-payments_create_banking_payments_payTo',
         {
           accountNumber: '1234567890',
           productId: 'SAV001ABC',
@@ -474,12 +474,12 @@ describe('MSW Integration Test', () => {
       expect(errorData.status).toBe(403);
       expect(errorData.message).toBe('Access denied for this operation');
       expect(errorData.suggestion).toBe('Contact administrator for required permissions');
-      expect(errorData.tool).toBe('banking-payments_post__v1_banking_payments_payTo');
+      expect(errorData.tool).toBe('banking-payments_create_banking_payments_payTo');
     });
 
     test('should handle other HTTP errors with preserved context', async () => {
       server.use(
-        http.post('http://localhost:3001/v1/banking/payments', () => {
+        http.post('http://localhost:3001/v1/banking/payments/payTo', () => {
           return HttpResponse.json({
             error: 'VALIDATION_ERROR',
             message: 'Invalid payment amount',
@@ -489,7 +489,7 @@ describe('MSW Integration Test', () => {
       );
 
       const result = await (mcpServer as any).executeTool(
-        'banking-payments_post__v1_banking_payments_payTo',
+        'banking-payments_create_banking_payments_payTo',
         {
           accountNumber: '1234567890',
           productId: 'SAV001ABC',
@@ -507,7 +507,7 @@ describe('MSW Integration Test', () => {
       expect(errorData.error).toBe('HTTP_ERROR');
       expect(errorData.status).toBe(400);
       expect(errorData.message).toBe('HTTP 400: Bad Request');
-      expect(errorData.tool).toBe('banking-payments_post__v1_banking_payments_payTo');
+      expect(errorData.tool).toBe('banking-payments_create_banking_payments_payTo');
       expect(errorData.details).toEqual({
         error: 'VALIDATION_ERROR',
         message: 'Invalid payment amount',
@@ -551,7 +551,7 @@ describe('MSW Integration Test', () => {
       server.use();
       
       const result = await (mcpServer as any).executeTool(
-        'banking-payments_post__v1_banking_payments_payTo',
+        'banking-payments_create_banking_payments_payTo',
         {
           accountNumber: '1234567890',
           productId: 'SAV001ABC',
@@ -567,8 +567,8 @@ describe('MSW Integration Test', () => {
       
       const errorData = JSON.parse(result.content[0].text);
       expect(errorData.error).toBe('EXECUTION_FAILED');
-      expect(errorData.message).toBe('Failed to execute tool banking-payments_post__v1_banking_payments_payTo');
-      expect(errorData.tool).toBe('banking-payments_post__v1_banking_payments_payTo');
+      expect(errorData.message).toBe('Failed to execute tool banking-payments_create_banking_payments_payTo');
+      expect(errorData.tool).toBe('banking-payments_create_banking_payments_payTo');
       // MSW throws its own error message when no handler is found
       expect(errorData.details).toContain('MSW');
     });

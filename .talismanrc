@@ -2,3 +2,7 @@ fileignoreconfig:
 - filename: mcp-openapi/examples/prompts/loan-recommendation.json
   checksum: 09d2510be300d41bae68e4d2844bb8ff801c9ce792ad7e71404d865865ca6e9b
 version: "1.0"
+
+fileignoreconfig:
+- filename: mcp-openapi/src/server.ts
+  checksum: 9d67e50aa65f1d3de3d39b290725d903bb92c72137057ec2424c92563acb59aa

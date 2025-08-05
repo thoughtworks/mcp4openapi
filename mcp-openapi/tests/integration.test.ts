@@ -51,10 +51,10 @@ describe('MCP OpenAPI Server Integration Tests', () => {
       const tools = (server as any).tools;
       const toolNames = tools.map((t: any) => t.name);
       
-      // Check for POST/PUT/DELETE tools (using actual generated names)
-      expect(toolNames.some((name: string) => name.includes('banking-payments_post'))).toBe(true);
-      expect(toolNames.some((name: string) => name.includes('banking-payees_post'))).toBe(true);
-      expect(toolNames.some((name: string) => name.includes('banking-payees_put'))).toBe(true);
+      // Check for tools using new smart naming convention
+      expect(toolNames.some((name: string) => name.includes('banking-payments_create'))).toBe(true);
+      expect(toolNames.some((name: string) => name.includes('banking-payees_create'))).toBe(true);
+      expect(toolNames.some((name: string) => name.includes('banking-payees_update'))).toBe(true);
       expect(toolNames.some((name: string) => name.includes('banking-payees_delete'))).toBe(true);
       
       // Note: The payments GET endpoint is configured as a resource, not a tool, due to override configuration
@@ -84,10 +84,10 @@ describe('MCP OpenAPI Server Integration Tests', () => {
   describe('Tool Execution Integration', () => {
     test('should validate tool structure and URL construction', () => {
       const tools = (server as any).tools;
-      const paymentTool = tools.find((t: any) => t.name.includes('banking-payments_post'));
+      const paymentTool = tools.find((t: any) => t.name.includes('banking-payments_create'));
       
       expect(paymentTool).toBeDefined();
-      expect(paymentTool.name).toBe('banking-payments_post__v1_banking_payments_payTo');
+      expect(paymentTool.name).toBe('banking-payments_create_banking_payments_payTo');
       expect(paymentTool.description).toContain('payment');
       
       // Test URL construction logic without making actual HTTP calls
@@ -96,7 +96,7 @@ describe('MCP OpenAPI Server Integration Tests', () => {
       const method = toolParts[1];
       
       expect(specId).toBe('banking-payments');
-      expect(method).toBe('post');
+      expect(method).toBe('create');
     });
 
     test('should handle non-existent tool calls', async () => {
@@ -114,7 +114,8 @@ describe('MCP OpenAPI Server Integration Tests', () => {
       // Test that tools have the expected structure for URL construction
       const tools = (server as any).tools;
       tools.forEach((tool: any) => {
-        expect(tool.name).toMatch(/^[a-zA-Z0-9-]+_[a-zA-Z]+__/);
+        // New smart naming format: specId_method_resource_[params]
+        expect(tool.name).toMatch(/^[a-zA-Z0-9-]+_[a-zA-Z]+_[a-zA-Z0-9_]+$/);
         expect(tool.description).toBeTruthy();
       });
     });
@@ -144,7 +145,12 @@ describe('MCP OpenAPI Server Integration Tests', () => {
         // Test URI structure
         expect(resource.uri).toMatch(/^[a-zA-Z0-9-]+:\/\//);
         
-        // Test that URI can be parsed correctly
+        // Skip the server info resource in URI parsing test
+        if (resource.uri === 'mcp-openapi://server/info') {
+          return;
+        }
+        
+        // Test that URI can be parsed correctly for API resources
         const [specId, ...pathParts] = resource.uri.split('://')[1].split('/');
         expect(specId).toMatch(/^(banking|v1)(-[a-z]+)?$/); // Allow "banking", "v1", or variations
         expect(pathParts).toBeDefined();
@@ -247,7 +253,7 @@ describe('MCP OpenAPI Server Integration Tests', () => {
 
     test('should validate tool input schemas', () => {
       const tools = (server as any).tools;
-      const payToTool = tools.find((t: any) => t.name.includes('banking-payments_post'));
+      const payToTool = tools.find((t: any) => t.name.includes('banking-payments_create'));
       
       expect(payToTool).toBeDefined();
       expect(payToTool.inputSchema).toBeDefined();
