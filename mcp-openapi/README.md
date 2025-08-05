@@ -542,19 +542,32 @@ Create JSON files in the `prompts` directory:
 ### Cursor IDE
 Create `.cursor/mcp.json`:
 
+> **⚠️ Important**: Cursor's MCP implementation doesn't support the `cwd` property and requires absolute paths.
+
 ```json
 {
   "mcpServers": {
-    "banking-apis": {
-      "command": "mcp-openapi-server",
-      "args": ["--specs", "./specs", "--config", "./mcp-config.json", "--verbose"],
+    "mcp-openapi": {
+      "command": "node",
+      "args": [
+        "/absolute/path/to/your/project/mcp-openapi/dist/cli.js",
+        "--specs", "/absolute/path/to/your/project/mcp-openapi/examples/specs",
+        "--config", "/absolute/path/to/your/project/mcp-openapi/examples/mcp-config.json",
+        "--prompts", "/absolute/path/to/your/project/mcp-openapi/examples/prompts"
+      ],
       "env": {
-        "API_TOKEN": "your-api-token"
+        "BANKING_API_TOKEN": "mcp-service-token-demo-123"
       }
     }
   }
 }
 ```
+
+**Configuration Notes:**
+- Replace `/absolute/path/to/your/project` with the actual absolute path where you've cloned this repository
+- The `env.BANKING_API_TOKEN` is configured to work with the included sample banking API
+- Ensure the project is built (`npm run build`) before running
+- All paths must be absolute - relative paths and `cwd` properties don't work reliably in Cursor
 
 ### Claude Desktop
 Add to `claude_desktop_config.json`:
