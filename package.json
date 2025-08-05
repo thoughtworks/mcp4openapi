@@ -20,6 +20,16 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "test": "cd mcp-openapi && npm install && npm run test"
+    "install:all": "npm install && cd mcp-openapi && npm install && cd ../mcp-test-client && npm install && cd ../sample-banking-api && npm install",
+    "build": "npm run build:mcp-openapi && npm run build:mcp-test-client && npm run build:sample-banking-api",
+    "build:mcp-openapi": "cd mcp-openapi && npm run build",
+    "build:mcp-test-client": "cd mcp-test-client && npm run build", 
+    "build:sample-banking-api": "cd sample-banking-api && npm run build",
+    "test": "npm run test:mcp-openapi && npm run test:mcp-test-client",
+    "test:mcp-openapi": "cd mcp-openapi && npm run test",
+    "test:mcp-test-client": "cd mcp-test-client && npm run test",
+    "clean": "rm -rf mcp-openapi/dist mcp-test-client/dist sample-banking-api/dist",
+    "dev:banking-api": "cd sample-banking-api && npm run server:dev",
+    "start:banking-api": "cd sample-banking-api && npm run server"
   }
 }
