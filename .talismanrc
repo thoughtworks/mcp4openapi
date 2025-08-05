@@ -12,4 +12,6 @@ fileignoreconfig:
   checksum: b1db2dc62717084dd12fb632bdfff2238d0153319646ad7deeab9af0d007e0ea
 - filename: mcp-openapi/tests/msw-integration.test.ts
   checksum: 6bbd05437ec9a9e90601c180db4588285e2362dafb003d75bb437c1d1c6f1e2e
+- filename: mcp-openapi/README.md
+  checksum: 7141ad18cd0c2c0a75d7ef144f490ac073a3b1c30ceae0cb2d892bc0a7f1c83b
 version: "1.0"
