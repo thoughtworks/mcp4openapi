@@ -57,7 +57,7 @@ describe('MCP OpenAPI Server Integration Tests', () => {
       expect(toolNames.some((name: string) => name.includes('banking-payees_update'))).toBe(true);
       expect(toolNames.some((name: string) => name.includes('banking-payees_delete'))).toBe(true);
       
-      // Note: The payments GET endpoint is configured as a resource, not a tool, due to override configuration
+      // Note: The payments GET endpoint is now configured as a tool due to Cursor compatibility requirements
     });
 
     test('should generate correct resources from banking APIs', () => {
@@ -65,7 +65,7 @@ describe('MCP OpenAPI Server Integration Tests', () => {
       const resourceUris = resources.map((r: any) => r.uri);
       
       expect(resourceUris.some((uri: string) => uri.includes('banking-products://'))).toBe(true);
-      expect(resourceUris.some((uri: string) => uri.includes('banking-payees://'))).toBe(true);
+      // Note: banking-payees and banking-payments are now configured as tools, not resources
     });
 
     test('should load custom prompts correctly', () => {
@@ -215,12 +215,12 @@ describe('MCP OpenAPI Server Integration Tests', () => {
     });
 
     test('should apply configuration overrides correctly', () => {
-      const resources = (server as any).resources;
+      const tools = (server as any).tools;
       
-      // Check that the GET payments endpoint is configured as a resource due to override
-      const paymentsResource = resources.find((r: any) => r.uri.includes('banking-payments://v1/banking/payments'));
-      expect(paymentsResource).toBeDefined();
-      expect(paymentsResource.description).toContain('Search payments');
+      // Check that the GET payments endpoint is configured as a tool due to override (changed from resource for Cursor compatibility)
+      const paymentsTool = tools.find((t: any) => t.name.includes('banking-payments_get_payments'));
+      expect(paymentsTool).toBeDefined();
+      expect(paymentsTool.description).toContain('Search payments');
     });
 
     test('should load configuration from file correctly', () => {
@@ -399,7 +399,7 @@ describe('MCP OpenAPI Server Integration Tests', () => {
       // Verify the resources list is populated correctly
       expect(expectedResult.resources.length).toBeGreaterThan(0);
       expect(expectedResult.resources.some((resource: any) => resource.uri.includes('banking-products://'))).toBe(true);
-      expect(expectedResult.resources.some((resource: any) => resource.uri.includes('banking-payees://'))).toBe(true);
+      // Note: banking-payees are now configured as tools, not resources
       
       // Ensure each resource has required properties
       expectedResult.resources.forEach((resource: any) => {

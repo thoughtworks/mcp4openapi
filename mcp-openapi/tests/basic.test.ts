@@ -193,7 +193,7 @@ describe('Banking API Examples Tests', () => {
         o.specId === 'banking-payments' && o.path === '/v1/banking/payments'
       );
       expect(paymentOverride).toBeDefined();
-      expect(paymentOverride.type).toBe('resource');
+      expect(paymentOverride.type).toBe('tool');
     });
   });
 
