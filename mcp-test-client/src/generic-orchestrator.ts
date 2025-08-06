@@ -1,6 +1,6 @@
-import { BaseLLM, LLMRequest, LLMResponse, MCPCapabilities } from './llm-interface.js';
+import { BaseLLM, LLMRequest, LLMResponse } from './llm-interface.js';
 import { MCPClient } from './mcp-client.js';
-import { MCPServerConfig, Scenario, ExecutionStep } from './types.js';
+import { MCPServerConfig, Scenario, ExecutionStep, MCPCapabilities } from './types.js';
 import chalk from 'chalk';
 
 export interface LLMConfig {
@@ -62,9 +62,9 @@ export class GenericOrchestrator {
     // 🐛 DEBUG: Show what capabilities we're sending to the LLM
     if (this.config.enableLogging) {
       console.log(chalk.cyan(`\n📋 [Orchestrator] Sending capabilities to LLM:`));
-      console.log(chalk.gray(`   🔧 Tools: ${capabilities.tools.length} (${capabilities.tools.map(t => t.name).join(', ')})`));
-      console.log(chalk.gray(`   📚 Resources: ${capabilities.resources.length} (${capabilities.resources.map(r => r.name).join(', ')})`));
-      console.log(chalk.gray(`   💬 Prompts: ${capabilities.prompts.length} (${capabilities.prompts.map(p => p.name).join(', ')})`));
+      console.log(chalk.gray(`   🔧 Tools: ${capabilities.tools.length} (${capabilities.tools.map((t: any) => t.name).join(', ')})`));
+      console.log(chalk.gray(`   📚 Resources: ${capabilities.resources.length} (${capabilities.resources.map((r: any) => r.name).join(', ')})`));
+      console.log(chalk.gray(`   💬 Prompts: ${capabilities.prompts.length} (${capabilities.prompts.map((p: any) => p.name).join(', ')})`));
       console.log(chalk.gray(`\n   🧠 Full capabilities object:`));
       console.log(chalk.gray(`      ${JSON.stringify(capabilities, null, 2).substring(0, 500)}...`));
     }

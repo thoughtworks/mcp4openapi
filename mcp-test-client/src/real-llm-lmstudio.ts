@@ -1,5 +1,6 @@
 import chalk from 'chalk';
-import { BaseLLM, LLMResponse, LLMRequest, MCPCapabilities } from './llm-interface.js';
+import { BaseLLM, LLMResponse, LLMRequest } from './llm-interface.js';
+import { MCPCapabilities } from './types.js';
 import fetch from 'node-fetch';
 
 /**
@@ -438,7 +439,7 @@ EXAMPLES:
     if (functionName.startsWith('resource_')) {
       // Find the matching resource to get the URI
       const resourceName = functionName.replace('resource_', '').replace(/_/g, ' ');
-      const resource = this.availableCapabilities?.resources.find(r => 
+      const resource = this.availableCapabilities?.resources.find((r: any) => 
         r.name.toLowerCase().includes(resourceName.toLowerCase()) ||
         resourceName.includes(r.name.toLowerCase())
       );
