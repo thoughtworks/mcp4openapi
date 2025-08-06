@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 
 // Interface for package.json structure
 interface PackageInfo {
@@ -19,16 +18,14 @@ function loadPackageInfo(): PackageInfo {
     return packageInfo;
   }
 
-  // Get ES module equivalent of __dirname
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = path.dirname(__filename);
-
   // Look for package.json in the project root
   // Try multiple possible locations to be robust
   const possiblePaths = [
-    path.resolve(process.cwd(), 'package.json'),
-    path.resolve(__dirname, '..', 'package.json'),
-    path.resolve(__dirname, '..', '..', 'package.json')
+    path.resolve(process.cwd(), 'package.json'), // When running from mcp-openapi/
+    path.resolve(process.cwd(), 'mcp-openapi', 'package.json'), // When running from API2MCP/
+    path.resolve('.', 'package.json'), // Current directory
+    path.resolve('..', 'package.json'), // Parent directory (from dist/)
+    path.resolve('../..', 'package.json') // Grandparent directory (from dist/src/)
   ];
 
   try {
