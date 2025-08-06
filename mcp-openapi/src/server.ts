@@ -215,13 +215,13 @@ export class MCPOpenAPIServer {
     // Add server info resource for querying capabilities
     this.addServerInfoResource();
 
+    // Update telemetry context with the newly generated tools and resources
+    this.updateTelemetryContext();
+
     // DEBUG: Show detailed MCP capabilities generated from OpenAPI specs
     this.telemetry.printMCPCapabilitiesDebug(
       this.getSpecFileName.bind(this),
-      this.determineMCPType.bind(this),
-      this.getToolName.bind(this),
-      this.hasOverride.bind(this),
-      this.isHttpMethod.bind(this)
+      this.hasOverride.bind(this)
     );
   }
 
@@ -390,17 +390,7 @@ export class MCPOpenAPIServer {
     return toolName;
   }
 
-  private getActualHttpMethod(abbreviatedMethod: string): string {
-    // Convert abbreviated method names (from tool names) back to HTTP methods
-    const methodMap: Record<string, string> = {
-      'get': 'get',
-      'create': 'post',
-      'update': 'put',
-      'patch': 'patch',
-      'delete': 'delete'
-    };
-    return methodMap[abbreviatedMethod] || abbreviatedMethod;
-  }
+
 
   private hasOverride(specId: string, path: string, method: string): boolean {
     return this.config.overrides.some(o => 
@@ -478,7 +468,13 @@ export class MCPOpenAPIServer {
     return {
       name: toolName,
       description: description,
-      inputSchema: this.buildInputSchema(operation, pathPattern)
+      inputSchema: this.buildInputSchema(operation, pathPattern),
+      _metadata: {
+        specId,
+        pathPattern,
+        method,
+        operation
+      }
     };
   }
 
@@ -667,26 +663,10 @@ export class MCPOpenAPIServer {
       method = toolOverride.method;
       specId = toolOverride.specId;
     } else {
-      // Parse tool name to get spec, method, and path (fallback for non-override tools)
-      const toolParts = toolName.split('_');
-      specId = toolParts[0];
-      const abbreviatedMethod = toolParts[1];
-      
-      // Convert abbreviated method back to actual HTTP method
-      method = this.getActualHttpMethod(abbreviatedMethod);
-      const pathParts = toolParts.slice(2);
-      
-      // Find the original path pattern
-      const spec = this.specs.get(specId);
-      if (!spec) {
-        throw new Error(`Spec ${specId} not found`);
-      }
-
-      const foundPattern = this.findPathPattern(spec, pathParts);
-      if (!foundPattern) {
-        throw new Error(`Could not determine path pattern for tool ${toolName}`);
-      }
-      pathPattern = foundPattern;
+      // Use stored metadata instead of parsing tool name
+      specId = tool._metadata.specId;
+      pathPattern = tool._metadata.pathPattern;
+      method = tool._metadata.method;
     }
     
     // Verify spec exists
@@ -838,17 +818,7 @@ export class MCPOpenAPIServer {
     }
   }
 
-  private findPathPattern(spec: OpenAPISpec, pathParts: string[]): string | null {
-    // This is a simplified approach - in practice, you might want more sophisticated matching
-    for (const pathPattern of Object.keys(spec.paths)) {
-      const sanitized = this.sanitizePath(pathPattern);
-      const reconstructed = pathParts.join('_');
-      if (sanitized.includes(reconstructed) || reconstructed.includes(sanitized.replace(/^_+|_+$/g, ''))) {
-        return pathPattern;
-      }
-    }
-    return null;
-  }
+
 
   private async readResource(uri: string, userContext?: { token?: string }, resourceParams?: Record<string, any>) {
     // Handle special server info resource

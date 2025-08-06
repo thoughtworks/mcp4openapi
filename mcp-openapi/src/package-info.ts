@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
 // Interface for package.json structure
 interface PackageInfo {
@@ -18,15 +19,19 @@ function loadPackageInfo(): PackageInfo {
     return packageInfo;
   }
 
+  // Get ES module equivalent of __dirname
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+
+  // Look for package.json in the project root
+  // Try multiple possible locations to be robust
+  const possiblePaths = [
+    path.resolve(process.cwd(), 'package.json'),
+    path.resolve(__dirname, '..', 'package.json'),
+    path.resolve(__dirname, '..', '..', 'package.json')
+  ];
+
   try {
-    // Look for package.json in the project root
-    // Try multiple possible locations to be robust
-    const possiblePaths = [
-      path.resolve(process.cwd(), 'package.json'),
-      path.resolve(__dirname, '..', 'package.json'),
-      path.resolve(__dirname, '..', '..', 'package.json')
-    ];
-    
     let packageJsonPath: string | null = null;
     for (const possiblePath of possiblePaths) {
       if (fs.existsSync(possiblePath)) {

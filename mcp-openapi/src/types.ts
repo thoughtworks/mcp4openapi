@@ -56,6 +56,13 @@ export interface MCPTool {
     properties: Record<string, any>;
     required: string[];
   };
+  // Metadata for tool execution (not exposed in MCP protocol)
+  _metadata: {
+    specId: string;
+    pathPattern: string;
+    method: string;
+    operation: any;
+  };
 }
 
 export interface MCPResource {

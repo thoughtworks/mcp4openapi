@@ -110,10 +110,7 @@ export class Telemetry {
 
   printMCPCapabilitiesDebug(
     getSpecFileName: (specId: string) => string,
-    determineMCPType: (specId: string, path: string, method: string, operation: any) => 'tool' | 'resource',
-    getToolName: (specId: string, pathPattern: string, method: string, operation: any) => string,
-    hasOverride: (specId: string, path: string, method: string) => boolean,
-    isHttpMethod: (method: string) => boolean
+    hasOverride: (specId: string, path: string, method: string) => boolean
   ): void {
     if (!this.context.options.verbose) {
       return;
@@ -135,46 +132,42 @@ export class Telemetry {
       isOverridden: boolean;
     }> = [];
 
-    // Collect tool details
-    for (const [specId, spec] of this.context.specs) {
+    // Collect tool details - use actual created tools with their metadata
+    for (const tool of this.context.tools) {
+      const { specId, pathPattern, method } = tool._metadata;
       const specFile = getSpecFileName(specId);
       
-      for (const [pathPattern, pathItem] of Object.entries(spec.paths)) {
-        for (const [method, operation] of Object.entries(pathItem)) {
-          if (isHttpMethod(method)) {
-            const mcpType = determineMCPType(specId, pathPattern, method, operation);
-            
-            if (mcpType === 'tool') {
-              const tool = this.context.tools.find(t => t.name === getToolName(specId, pathPattern, method, operation));
-              if (tool) {
-                generationDetails.push({
-                  specId,
-                  specFile,
-                  path: pathPattern,
-                  method: method.toUpperCase(),
-                  mcpType: 'tool',
-                  mcpName: tool.name,
-                  description: tool.description,
-                  isOverridden: hasOverride(specId, pathPattern, method)
-                });
-              }
-            } else if (mcpType === 'resource') {
-              const resource = this.context.resources.find(r => r.uri === `${specId}://${pathPattern.startsWith('/') ? pathPattern.substring(1) : pathPattern}`);
-              if (resource) {
-                generationDetails.push({
-                  specId,
-                  specFile,
-                  path: pathPattern,
-                  method: method.toUpperCase(),
-                  mcpType: 'resource',
-                  mcpName: resource.name,
-                  description: resource.description,
-                  isOverridden: hasOverride(specId, pathPattern, method)
-                });
-              }
-            }
-          }
-        }
+      generationDetails.push({
+        specId,
+        specFile,
+        path: pathPattern,
+        method: method.toUpperCase(),
+        mcpType: 'tool',
+        mcpName: tool.name,
+        description: tool.description,
+        isOverridden: hasOverride(specId, pathPattern, method)
+      });
+    }
+
+    // Collect resource details - use actual created resources
+    for (const resource of this.context.resources) {
+      // Extract specId and path from resource URI (format: specId://path)
+      const uriParts = resource.uri.split('://');
+      if (uriParts.length === 2) {
+        const specId = uriParts[0];
+        const pathPattern = '/' + uriParts[1];
+        const specFile = getSpecFileName(specId);
+        
+        generationDetails.push({
+          specId,
+          specFile,
+          path: pathPattern,
+          method: 'GET', // Resources are typically GET operations
+          mcpType: 'resource',
+          mcpName: resource.name,
+          description: resource.description,
+          isOverridden: false // For now, assume resources don't have overrides in this context
+        });
       }
     }
 
