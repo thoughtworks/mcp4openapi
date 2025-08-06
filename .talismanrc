@@ -70,3 +70,12 @@ fileignoreconfig:
 - filename: README.md
   checksum: 4dd5052dc7c751564051d5198edf6bdbd19f0721ae2bff8693e3993f10d571d9
 version: "1.0"
+
+fileignoreconfig:
+- filename: mcp-openapi/src/telemetry.ts
+  checksum: f9746268b5fe805f93cac0b7fbe8d34f8cef35f494cb2f888f43eb9db16caad2
+- filename: mcp-openapi/README.md
+  checksum: 674d80108a01429ad5686fc13504bcbb16c85363cb05dd90169ae20dd59f4e77
+- filename: mcp-openapi/src/server.ts
+  checksum: 9abc2b04e3b17b787244e7ae6b18212fdac903f1e4571ee874fcf053cfcb602b
+version: "1.0"
