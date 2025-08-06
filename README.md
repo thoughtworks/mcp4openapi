@@ -1,6 +1,8 @@
 # MCP-OpenAPI Model Context Protocol wrapper for OpenAPI compliant endpoints
 This is a Proof-of-Concept project implementing a multi-purpose OpenAPI MCP Server that can be used to proxy any OpenAPI compliant API backend with an MCP Server protocol
 
+This implementation showcases that MCP capabilities like tools and resources are a direct 1-to-1 mapping for RESTFUL APIs and can be dynamically generated based on their specifications in OpenAPI.  We do not need to explicitly and specifically code/build MCP servers for RESTFUL APIs.  As an added feature, this implementation allows the addition of MCP Prompts, via configuration files, to enrich the MCP tools & resources generated from the backend APIs.
+
 The project also comes with an example OpenAPI application hosting some sample banking APIs with some manufactured data, a demo MCP Client application that provides an example use-case of an MCP Client interacting with the MCP Server proxying some sample problems between the sample banking APIs and an LLM (hosting via LMStudio).  
 
 Demo/Testing can also be done without the demo MCP application or LM Studio via integrating the MCP server with an MCP enabled tools such as Cursor IDE (tested) or Windsurf (not tested), etc.
