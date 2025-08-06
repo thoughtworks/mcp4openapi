@@ -1,3 +1,5 @@
+threshold: medium
+
 fileignoreconfig:
 - filename: mcp-openapi/examples/prompts/loan-recommendation.json
   checksum: 09d2510be300d41bae68e4d2844bb8ff801c9ce792ad7e71404d865865ca6e9b
