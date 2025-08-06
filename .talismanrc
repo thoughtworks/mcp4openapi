@@ -55,3 +55,12 @@ fileignoreconfig:
 - filename: mcp-openapi/src/telemetry.ts
   checksum: 179cf9144a76e5fd50a83653014e3985ca4e8a36d2e9bc4aee95f4c9a2077f12
 version: "1.0"
+
+fileignoreconfig:
+- filename: mcp-openapi/README.md
+  checksum: 183b8c20b7082010a1da833fe4798a3d9b1a99e272a8bf9315bacb1d6e12548b
+- filename: sample-banking-api/server/server.ts
+  checksum: 10e4cdf9a7fc4d7dbbdefbe7aab261fd36aa6e16d1a6ea82a747f24b259aef7b
+- filename: mcp-openapi/src/server.ts
+  checksum: 61e33364df17f65f6349c8359a5ab57ade8da37704194e771c68e3cda0fa7d8e
+version: "1.0"
