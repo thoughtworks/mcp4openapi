@@ -38,3 +38,15 @@ fileignoreconfig:
 - filename: mcp-test-client/src/real-llm-lmstudio.ts
   checksum: 6fd0c396c5bbd8060c06c2dd5cc2acbd17f5a0ed3d7c2a2465c5e435befebbc5
 version: "1.0"
+
+fileignoreconfig:
+- filename: mcp-test-client/src/index.ts
+  checksum: 0bebd423f8a5fe9f7d46dbb02a42a9cac80084c1e0522b24a64d15e7d8a0a9bf
+- filename: mcp-test-client/src/generic-orchestrator.ts
+  checksum: 72b4255c31e1d9bcf0829c6675b2c2d360ee7a67f535aac83eb6e113f49d70c8
+version: "1.0"
+
+fileignoreconfig:
+- filename: mcp-openapi/src/server.ts
+  checksum: 49fc19874b57b3c21a8b584cfe444dc5b6499673f536004148dfd6054cd910c0
+version: "1.0"
