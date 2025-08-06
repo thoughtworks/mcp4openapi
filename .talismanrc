@@ -15,3 +15,14 @@ fileignoreconfig:
 - filename: mcp-openapi/README.md
   checksum: 7141ad18cd0c2c0a75d7ef144f490ac073a3b1c30ceae0cb2d892bc0a7f1c83b
 version: "1.0"
+
+fileignoreconfig:
+- filename: sample-banking-api/tests/paymentRoutes.test.ts
+  checksum: 43024ce37b125f7497599683f0f31d06bda17ca7000926c79395fcf5456cf389
+- filename: sample-banking-api/package-lock.json
+  checksum: 8cf728b2897edf74c2002d25d0f7d481db4838026f91b37227150e3ec334054e
+- filename: sample-banking-api/tests/payeeRoutes.test.ts
+  checksum: d714756af9df42533183a666d9914cfb7da4dd57e843d27be8631bd55eb51190
+- filename: sample-banking-api/tests/productRoutes.test.ts
+  checksum: 24190d847e2251cecee0f399e9378ea7cf9bf7567822f3fad99e09bdc865dd23
+version: "1.0"
