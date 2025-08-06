@@ -26,3 +26,9 @@ fileignoreconfig:
 - filename: sample-banking-api/tests/productRoutes.test.ts
   checksum: 24190d847e2251cecee0f399e9378ea7cf9bf7567822f3fad99e09bdc865dd23
 version: "1.0"
+
+
+fileignoreconfig:
+- filename: sample-banking-api/server/server.ts
+  checksum: 6a148421cc10dba3d905774be51b194bb9439b68ff8d0dfe4ede3abe2308c1f7
+version: "1.0"
