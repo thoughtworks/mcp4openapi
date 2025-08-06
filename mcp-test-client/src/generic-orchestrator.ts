@@ -69,15 +69,22 @@ export class GenericOrchestrator {
       console.log(chalk.gray(`      ${JSON.stringify(capabilities, null, 2).substring(0, 500)}...`));
     }
 
-    let round = 0;
+    let round = 1; // Start at 1 since initial LLM call is Round 1
     const maxRounds = this.config.maxRounds || 10;
     const steps: ExecutionStep[] = [];
+
+    // Round 1: Initial LLM call
+    if (this.config.enableLogging) {
+      console.log(chalk.blue(`\n${'='.repeat(80)}`));
+      console.log(chalk.blue(`🔄 [Orchestrator] Round ${round}/${maxRounds}`));
+      console.log(chalk.blue(`${'='.repeat(80)}`));
+    }
 
     // Start conversation with LLM
     let llmResponse = await this.llm.processUserPrompt(userPrompt, capabilities);
     
     if (this.config.enableLogging) {
-      console.log(chalk.magenta(`\n🤖 [Orchestrator] LLM Initial Response:`));
+      console.log(chalk.magenta(`\n🤖 [Orchestrator] LLM Round ${round} Response:`));
       console.log(chalk.gray(`   📝 Content: ${llmResponse.content?.substring(0, 100) || 'No content'}...`));
       console.log(chalk.gray(`   🔄 Needs more data: ${llmResponse.needsMoreData}`));
       console.log(chalk.gray(`   📋 Requests: ${llmResponse.requests?.length || 0}`));
@@ -90,16 +97,19 @@ export class GenericOrchestrator {
 
     // Multi-round conversation loop
     while (llmResponse.needsMoreData && round < maxRounds) {
+      // Execute requests from current round
+      const results = await this.executeRequests(llmResponse.requests || [], steps);
+      
+      // Move to next round
       round++;
       
       if (this.config.enableLogging) {
-        console.log(chalk.blue(`\n🔄 [Orchestrator] Round ${round}/${maxRounds}`));
+        console.log(chalk.blue(`\n${'='.repeat(80)}`));
+        console.log(chalk.blue(`🔄 [Orchestrator] Round ${round}/${maxRounds}`));
+        console.log(chalk.blue(`${'='.repeat(80)}`));
       }
-
-      // Execute LLM's requests
-      const results = await this.executeRequests(llmResponse.requests || [], steps);
       
-      // Send results back to LLM
+      // Send results back to LLM for next round
       llmResponse = await this.llm.processResults(results);
       
       if (this.config.enableLogging) {
@@ -108,6 +118,13 @@ export class GenericOrchestrator {
         console.log(chalk.gray(`   🔄 Needs more data: ${llmResponse.needsMoreData}`));
         console.log(chalk.gray(`   📋 Requests: ${llmResponse.requests?.length || 0}`));
       }
+    }
+
+    // Add closing separator
+    if (this.config.enableLogging) {
+      console.log(chalk.blue(`\n${'='.repeat(80)}`));
+      console.log(chalk.blue(`📊 [Orchestrator] Conversation Complete`));
+      console.log(chalk.blue(`${'='.repeat(80)}`));
     }
 
     // Circuit breaker check

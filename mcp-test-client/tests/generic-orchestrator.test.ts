@@ -153,7 +153,7 @@ describe('GenericOrchestrator', () => {
 
       expect(result.success).toBe(true);
       expect(result.response).toBe('Hello, this is my response');
-      expect(result.rounds).toBe(0);
+      expect(result.rounds).toBe(1);
       expect(result.steps).toHaveLength(0);
     });
 
@@ -179,7 +179,7 @@ describe('GenericOrchestrator', () => {
       const result = await orchestrator.handleUserPrompt('Execute a tool');
 
       expect(result.success).toBe(true);
-      expect(result.rounds).toBe(1);
+      expect(result.rounds).toBe(2);
       expect(result.steps).toHaveLength(1);
       expect(result.steps[0].type).toBe('tool');
       expect(result.steps[0].name).toBe('test-tool');
@@ -208,7 +208,7 @@ describe('GenericOrchestrator', () => {
       const result = await orchestrator.handleUserPrompt('Get resource data');
 
       expect(result.success).toBe(true);
-      expect(result.rounds).toBe(1);
+      expect(result.rounds).toBe(2);
       expect(result.steps).toHaveLength(1);
       expect(result.steps[0].type).toBe('resource');
       expect(result.steps[0].name).toBe('test://resource');
@@ -237,7 +237,7 @@ describe('GenericOrchestrator', () => {
       const result = await orchestrator.handleUserPrompt('Use a prompt');
 
       expect(result.success).toBe(true);
-      expect(result.rounds).toBe(1);
+      expect(result.rounds).toBe(2);
       expect(result.steps).toHaveLength(1);
       expect(result.steps[0].type).toBe('prompt');
       expect(result.steps[0].name).toBe('test-prompt');
@@ -277,7 +277,7 @@ describe('GenericOrchestrator', () => {
       const result = await orchestrator.handleUserPrompt('Execute workflow');
 
       expect(result.success).toBe(true);
-      expect(result.rounds).toBe(2);
+      expect(result.rounds).toBe(3);
       expect(result.steps).toHaveLength(2);
       expect(result.steps[0].type).toBe('resource');
       expect(result.steps[1].type).toBe('tool');
@@ -376,7 +376,7 @@ describe('GenericOrchestrator', () => {
       const result = await orchestrator.runScenario(testScenario);
 
       expect(result.success).toBe(true);
-      expect(result.rounds).toBe(1);
+      expect(result.rounds).toBe(2);
       expect(result.steps).toHaveLength(1);
     });
   });
@@ -397,7 +397,7 @@ describe('GenericOrchestrator', () => {
       const result = await orchestrator.handleUserPrompt('Empty request');
 
       expect(result.success).toBe(true);
-      expect(result.rounds).toBe(1);
+      expect(result.rounds).toBe(2);
       expect(result.steps).toHaveLength(0);
     });
 
@@ -416,7 +416,7 @@ describe('GenericOrchestrator', () => {
       const result = await orchestrator.handleUserPrompt('Undefined requests');
 
       expect(result.success).toBe(true);
-      expect(result.rounds).toBe(1);
+      expect(result.rounds).toBe(2);
       expect(result.steps).toHaveLength(0);
     });
 

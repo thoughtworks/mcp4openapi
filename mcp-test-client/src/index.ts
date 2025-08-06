@@ -106,9 +106,7 @@ async function main() {
           name: 'action',
           message: 'What would you like to do?',
           choices: [
-            { name: '💬 Ask a custom question (Real LLM)', value: 'custom_prompt' },
             { name: '🎬 Try a scenario prompt (Real LLM)', value: 'run_scenario' },
-            { name: '📋 List MCP capabilities', value: 'list_capabilities' },
             { name: '🚪 Exit', value: 'exit' }
           ]
         }
@@ -117,14 +115,6 @@ async function main() {
       switch (action) {
         case 'run_scenario':
           await runScenarioWithRealLLM(orchestrator, testData);
-          break;
-        
-        case 'custom_prompt':
-          await askCustomQuestion(orchestrator);
-          break;
-        
-        case 'list_capabilities':
-          await listCapabilities(orchestrator);
           break;
         
         case 'exit':
@@ -161,7 +151,6 @@ async function runScenarioWithRealLLM(orchestrator: GenericOrchestrator, testDat
   console.log(chalk.blue(`\n📊 Results:`));
   console.log(chalk.gray(`   ${result.success ? '✅' : '❌'} Success: ${result.success}`));
   console.log(chalk.gray(`   🔄 Rounds: ${result.rounds}`));
-  console.log(chalk.gray(`   📋 Steps: ${result.steps.length}`));
   
   if (result.response) {
     console.log(chalk.green(`\n💬 Final Response:`));
@@ -169,44 +158,7 @@ async function runScenarioWithRealLLM(orchestrator: GenericOrchestrator, testDat
   }
 }
 
-async function askCustomQuestion(orchestrator: GenericOrchestrator) {
-  const { userPrompt } = await inquirer.prompt([
-    {
-      type: 'input',
-      name: 'userPrompt',
-      message: 'What would you like to ask the LLM?',
-      validate: (input: string) => input.trim().length > 0 || 'Please enter a question'
-    }
-  ]);
 
-  console.log(chalk.cyan(`\n🤖 Processing your question...`));
-  console.log(chalk.gray(`📝 Question: "${userPrompt}"`));
-  
-  const result = await orchestrator.handleUserPrompt(userPrompt);
-  
-  console.log(chalk.blue(`\n📊 Results:`));
-  console.log(chalk.gray(`   ${result.success ? '✅' : '❌'} Success: ${result.success}`));
-  console.log(chalk.gray(`   🔄 Rounds: ${result.rounds}`));
-  console.log(chalk.gray(`   📋 Steps: ${result.steps.length}`));
-  
-  if (result.response) {
-    console.log(chalk.green(`\n💬 Final Response:`));
-    console.log(chalk.white(result.response));
-  }
-}
-
-async function listCapabilities(orchestrator: GenericOrchestrator) {
-  console.log(chalk.blue(`\n📋 Available MCP Capabilities:`));
-  
-  try {
-    // This is a bit of a hack since GenericOrchestrator doesn't expose getCapabilities
-    // We'll need to add a method for this or access the client directly
-    console.log(chalk.yellow(`   ⚠️  Capability listing not yet implemented in configuration-driven architecture`));
-    console.log(chalk.gray(`   This would show available tools, resources, and prompts from connected MCP servers`));
-  } catch (error) {
-    console.log(chalk.red(`   ❌ Error listing capabilities: ${(error as Error).message}`));
-  }
-}
 
 // Run the main function if this file is executed directly
 if (import.meta.url === `file://${process.argv[1]}`) {

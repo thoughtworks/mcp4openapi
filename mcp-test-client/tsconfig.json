@@ -5,7 +5,7 @@
     "moduleResolution": "node",
     "lib": ["ES2022"],
     "outDir": "./dist",
-
+    "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -19,8 +19,7 @@
     "types": ["jest", "node"]
   },
   "include": [
-    "src/**/*",
-    "tests/**/*"
+    "src/**/*"
   ],
   "exclude": [
     "node_modules",
