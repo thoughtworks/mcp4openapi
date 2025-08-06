@@ -22,6 +22,7 @@ import {
   MCPResource,
   ServerOptions
 } from './types.js';
+import { Telemetry, TelemetryContext } from './telemetry.js';
 
 export class MCPOpenAPIServer {
   private server: Server;
@@ -34,91 +35,24 @@ export class MCPOpenAPIServer {
   private resources: MCPResource[] = [];
   private options: ServerOptions;
   private isStdioMode = false; // Track if running in stdio mode
+  private telemetry: Telemetry;
 
-  // Proper logging using MCP protocol for stdio mode, console for HTTP mode
-  private debug(message: string): void {
-    if (this.options.verbose) {
-      if (this.isStdioMode && this.server) {
-        // Send debug messages through MCP logging notification
-        this.server.notification({
-          method: 'notifications/message',
-          params: {
-            level: 'debug',
-            logger: 'mcp-openapi-server',
-            data: message
-          }
-        }).catch(() => {
-          // Fallback to stderr if notification fails
-          process.stderr.write(`[DEBUG] ${message}\n`);
-        });
-      } else if (!this.isStdioMode) {
-        // HTTP mode - use console
-        console.debug(`[DEBUG] ${message}`);
-      }
-    }
+  private updateTelemetryContext(): void {
+    // Update telemetry context when server properties change
+    this.telemetry = new Telemetry({
+      options: this.options,
+      isStdioMode: this.isStdioMode,
+      server: this.server,
+      specs: this.specs,
+      specFiles: this.specFiles,
+      config: this.config,
+      prompts: this.prompts,
+      tools: this.tools,
+      resources: this.resources
+    });
   }
 
-  private info(message: string): void {
-    if (this.options.verbose) {
-      if (this.isStdioMode && this.server) {
-        // Send info messages through MCP logging notification
-        this.server.notification({
-          method: 'notifications/message',
-          params: {
-            level: 'info',
-            logger: 'mcp-openapi-server',
-            data: message
-          }
-        }).catch(() => {
-          // Fallback to stderr if notification fails
-          process.stderr.write(`[INFO] ${message}\n`);
-        });
-      } else if (!this.isStdioMode) {
-        // HTTP mode - use console
-        console.info(`[INFO] ${message}`);
-      }
-    }
-  }
 
-  private warn(message: string): void {
-    if (this.isStdioMode && this.server) {
-      // Send warnings through MCP logging notification
-      this.server.notification({
-        method: 'notifications/message',
-        params: {
-          level: 'warning',
-          logger: 'mcp-openapi-server',
-          data: message
-        }
-      }).catch(() => {
-        // Fallback to stderr if notification fails
-        process.stderr.write(`[WARN] ${message}\n`);
-      });
-    } else if (!this.isStdioMode) {
-      // HTTP mode - use console
-      console.warn(`[WARN] ${message}`);
-    }
-  }
-
-  private error(message: string): void {
-    if (this.isStdioMode && this.server) {
-      // Send errors through MCP logging notification
-      this.server.notification({
-        method: 'notifications/message',
-        params: {
-          level: 'error',
-          logger: 'mcp-openapi-server',
-          data: message
-        }
-      }).catch(() => {
-        // Fallback to stderr if notification fails
-        process.stderr.write(`[ERROR] ${message}\n`);
-      });
-    } else if (!this.isStdioMode) {
-      // HTTP mode - use console
-      console.error(`[ERROR] ${message}`);
-    }
-  }
 
   constructor(options: ServerOptions = {}) {
     this.options = {
@@ -148,6 +82,19 @@ export class MCPOpenAPIServer {
     
     this.app = express();
     this.setupExpress();
+
+    // Initialize telemetry with context
+    this.telemetry = new Telemetry({
+      options: this.options,
+      isStdioMode: this.isStdioMode,
+      server: this.server,
+      specs: this.specs,
+      specFiles: this.specFiles,
+      config: this.config,
+      prompts: this.prompts,
+      tools: this.tools,
+      resources: this.resources
+    });
   }
 
   private setupExpress() {
@@ -157,7 +104,7 @@ export class MCPOpenAPIServer {
   }
 
   async initialize(): Promise<void> {
-    this.debug('🚀 Initializing MCP OpenAPI Server...');
+    this.telemetry.debug('🚀 Initializing MCP OpenAPI Server...');
 
     await this.loadConfig();
     await this.loadOpenAPISpecs();
@@ -168,9 +115,9 @@ export class MCPOpenAPIServer {
     const baseUrl = this.options.baseUrl || this.config.baseUrl || 'http://localhost:3001';
     const source = this.options.baseUrl ? 'CLI --base-url' : 
                    this.config.baseUrl ? 'config file' : 'default';
-    this.debug(`🌐 Using base URL: ${baseUrl} (from ${source})`);
+    this.telemetry.debug(`🌐 Using base URL: ${baseUrl} (from ${source})`);
 
-    this.debug(`✅ Loaded ${this.specs.size} specs, ${this.tools.length} tools, ${this.resources.length} resources, ${this.prompts.size} prompts`);
+    this.telemetry.debug(`✅ Loaded ${this.specs.size} specs, ${this.tools.length} tools, ${this.resources.length} resources, ${this.prompts.size} prompts`);
   }
 
   private async loadConfig(): Promise<void> {
@@ -179,16 +126,16 @@ export class MCPOpenAPIServer {
         const configContent = fs.readFileSync(this.options.configFile!, 'utf8');
         this.config = { ...this.config, ...JSON.parse(configContent) };
         
-        this.debug(`📄 Loaded config from ${this.options.configFile}`);
+        this.telemetry.debug(`📄 Loaded config from ${this.options.configFile}`);
       }
     } catch (error) {
-      this.warn(`⚠️  Could not load config file: ${(error as Error).message}`);
+      this.telemetry.warn(`⚠️  Could not load config file: ${(error as Error).message}`);
     }
   }
 
   private async loadOpenAPISpecs(): Promise<void> {
     if (!fs.existsSync(this.options.specsDir!)) {
-      this.warn(`⚠️  Specs directory ${this.options.specsDir} does not exist`);
+      this.telemetry.warn(`⚠️  Specs directory ${this.options.specsDir} does not exist`);
       return;
     }
 
@@ -200,17 +147,19 @@ export class MCPOpenAPIServer {
           const filePath = path.join(this.options.specsDir!, file);
           const content = fs.readFileSync(filePath, 'utf8');
           
+          // load all the openAPI specs we can find in the configured specs directory
           const spec: OpenAPISpec = file.endsWith('.json') 
             ? JSON.parse(content)
             : yaml.load(content) as OpenAPISpec;
 
+          // create a unique id for each loaded spec, using the OpenAPI x-spec-id if available, otherwise use the filename
           const specId = spec.info['x-spec-id'] || path.basename(file, path.extname(file));
           this.specs.set(specId, spec);
           this.specFiles.set(specId, file); // Store original filename
           
-          this.debug(`📋 Loaded OpenAPI spec: ${specId} (from ${file})`);
+          this.telemetry.debug(`📋 Loaded OpenAPI spec: ${specId} (from ${file})`);
         } catch (error) {
-          this.error(`❌ Error loading spec ${file}: ${(error as Error).message}`);
+          this.telemetry.error(`❌ Error loading spec ${file}: ${(error as Error).message}`);
         }
       }
     }
@@ -218,7 +167,7 @@ export class MCPOpenAPIServer {
 
   private async loadPrompts(): Promise<void> {
     if (!fs.existsSync(this.options.promptsDir!)) {
-      this.debug(`📁 Prompts directory ${this.options.promptsDir} does not exist, skipping prompts`);
+      this.telemetry.debug(`📁 Prompts directory ${this.options.promptsDir} does not exist, skipping prompts`);
       return;
     }
 
@@ -233,9 +182,9 @@ export class MCPOpenAPIServer {
           
           this.prompts.set(promptSpec.name, promptSpec);
           
-          this.debug(`💬 Loaded prompt: ${promptSpec.name}`);
+          this.telemetry.debug(`💬 Loaded prompt: ${promptSpec.name}`);
         } catch (error) {
-          this.error(`❌ Error loading prompt ${file}: ${(error as Error).message}`);
+          this.telemetry.error(`❌ Error loading prompt ${file}: ${(error as Error).message}`);
         }
       }
     }
@@ -265,7 +214,13 @@ export class MCPOpenAPIServer {
     this.addServerInfoResource();
 
     // DEBUG: Show detailed MCP capabilities generated from OpenAPI specs
-    this.printMCPCapabilitiesDebug();
+    this.telemetry.printMCPCapabilitiesDebug(
+      this.getSpecFileName.bind(this),
+      this.determineMCPType.bind(this),
+      this.getToolName.bind(this),
+      this.hasOverride.bind(this),
+      this.isHttpMethod.bind(this)
+    );
   }
 
   private addServerInfoResource(): void {
@@ -351,147 +306,7 @@ export class MCPOpenAPIServer {
     };
   }
 
-  private printMCPCapabilitiesDebug(): void {
-    if (!this.options.verbose) {
-      return;
-    }
 
-    // Show detailed capability listing for both stdio and HTTP modes
-    this.info('\n📋 MCP OpenAPI Server - Loaded Capabilities:');
-    this.info('=' .repeat(80));
-
-    // Create a detailed mapping of what was generated
-    const generationDetails: Array<{
-      specId: string;
-      specFile: string;
-      path: string;
-      method: string;
-      mcpType: 'tool' | 'resource' | 'prompt';
-      mcpName: string;
-      description: string;
-      isOverridden: boolean;
-    }> = [];
-
-    // Collect tool details
-    for (const [specId, spec] of this.specs) {
-      const specFile = this.getSpecFileName(specId);
-      
-      for (const [pathPattern, pathItem] of Object.entries(spec.paths)) {
-        for (const [method, operation] of Object.entries(pathItem)) {
-          if (this.isHttpMethod(method)) {
-            const mcpType = this.determineMCPType(specId, pathPattern, method, operation);
-            
-            if (mcpType === 'tool') {
-              const tool = this.tools.find(t => t.name === this.getToolName(specId, pathPattern, method, operation));
-              if (tool) {
-                generationDetails.push({
-                  specId,
-                  specFile,
-                  path: pathPattern,
-                  method: method.toUpperCase(),
-                  mcpType: 'tool',
-                  mcpName: tool.name,
-                  description: tool.description,
-                  isOverridden: this.hasOverride(specId, pathPattern, method)
-                });
-              }
-            } else if (mcpType === 'resource') {
-              const resource = this.resources.find(r => r.uri === `${specId}://${pathPattern.startsWith('/') ? pathPattern.substring(1) : pathPattern}`);
-              if (resource) {
-                generationDetails.push({
-                  specId,
-                  specFile,
-                  path: pathPattern,
-                  method: method.toUpperCase(),
-                  mcpType: 'resource',
-                  mcpName: resource.name,
-                  description: resource.description,
-                  isOverridden: this.hasOverride(specId, pathPattern, method)
-                });
-              }
-            }
-          }
-        }
-      }
-    }
-
-    // Add prompt details
-    for (const [name, spec] of this.prompts) {
-      generationDetails.push({
-        specId: 'prompts',
-        specFile: 'prompt files',
-        path: 'N/A',
-        method: 'N/A',
-        mcpType: 'prompt',
-        mcpName: name,
-        description: spec.description || 'No description',
-        isOverridden: false // Prompts don't have overrides
-      });
-    }
-
-    // Print summary
-    const toolCount = generationDetails.filter(d => d.mcpType === 'tool').length;
-    const resourceCount = generationDetails.filter(d => d.mcpType === 'resource').length;
-    const promptCount = generationDetails.filter(d => d.mcpType === 'prompt').length;
-    const overriddenCount = generationDetails.filter(d => d.isOverridden).length;
-
-    const overrideSummary = overriddenCount > 0 ? ` (${overriddenCount} overridden)` : '';
-    this.info(`\n📊 LOADED: ${toolCount} tools, ${resourceCount} resources, ${promptCount} prompts from ${this.specs.size} OpenAPI specs${overrideSummary}\n`);
-
-    // Print detailed breakdown
-    this.info('📋 BREAKDOWN BY SPEC:');
-    this.info('├─ Spec File & Path                           │ Method │ MCP Type  │ MCP Name');
-    this.info('├─────────────────────────────────────────────┼────────┼───────────┼─────────────────────');
-
-    // Group by spec file for better readability
-    const groupedDetails = new Map<string, typeof generationDetails>();
-    generationDetails.forEach(detail => {
-      const key = detail.specFile;
-      if (!groupedDetails.has(key)) {
-        groupedDetails.set(key, []);
-      }
-      groupedDetails.get(key)!.push(detail);
-    });
-
-    let isFirstGroup = true;
-    for (const [specFile, details] of Array.from(groupedDetails.entries()).sort()) {
-      // Add spacing between spec file groups (except first)
-      if (!isFirstGroup) {
-        this.info('├─────────────────────────────────────────────┼────────┼───────────┼─────────────────────');
-      }
-      isFirstGroup = false;
-
-      // Sort paths within each spec file
-      const sortedDetails = details.sort((a, b) => a.path.localeCompare(b.path));
-      
-      sortedDetails.forEach((detail, index) => {
-        const isFirstInGroup = index === 0;
-        const mcpTypeIcon = detail.mcpType === 'tool' ? '🔧' : detail.mcpType === 'resource' ? '📚' : '💬';
-        
-        if (isFirstInGroup) {
-          // Show spec file name on first line
-          const specDisplay = specFile.length > 42 ? specFile.substring(0, 39) + '...' : specFile;
-          this.info(`├─ ${specDisplay.padEnd(42)} │ ${' '.repeat(6)} │           │`);
-        }
-        
-        // Show path indented under spec file
-        const pathDisplay = detail.path.length > 38 ? detail.path.substring(0, 35) + '...' : detail.path;
-        const pathLine = `   └─ ${pathDisplay}`;
-        const overriddenPrefix = detail.isOverridden ? '(Overridden) ' : '';
-        const displayName = `${overriddenPrefix}${detail.mcpName}`;
-        this.info(`│  ${pathLine.padEnd(42)} │ ${detail.method.padEnd(6)} │ ${mcpTypeIcon} ${detail.mcpType.padEnd(6)} │ ${displayName}`);
-        
-        // Show description indented further if it's meaningful
-        if (detail.description && detail.description !== detail.mcpName && detail.description.length > 10) {
-          const descDisplay = detail.description.length > 50 ? detail.description.substring(0, 47) + '...' : detail.description;
-          this.info(`│  ${' '.repeat(42)} │        │           │ → ${descDisplay}`);
-        }
-      });
-    }
-
-    this.info('\n' + '=' .repeat(80));
-    this.info('✅ MCP OpenAPI Server ready for requests\n');
-  }
 
   private getSpecFileName(specId: string): string {
     // Return the stored original filename, or fallback to specId
@@ -513,6 +328,8 @@ export class MCPOpenAPIServer {
 
   private generateShortToolName(specId: string, pathPattern: string, method: string): string {
     // Server name is "mcp-openapi" (11 chars), leaving ~49 chars for tool name to stay under 60
+    // Reason for short tool name is because some MCP clients like Cursor IDE, as of this writing, 
+    // has a limit of 60 chars for tool name
     const maxToolNameLength = 48;
     
     // Method abbreviations
@@ -756,11 +573,11 @@ export class MCPOpenAPIServer {
 
   private setupRequestHandlers(): void {
     // Set up MCP protocol handlers for stdio transport
-    this.debug('🔧 Setting up MCP request handlers...');
+    this.telemetry.debug('🔧 Setting up MCP request handlers...');
     
     // Handle initialized notification (required for MCP handshake)
     this.server.setNotificationHandler(InitializedNotificationSchema, async () => {
-      this.debug('✅ MCP client initialized successfully');
+      this.telemetry.debug('✅ MCP client initialized successfully');
     });
 
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -770,7 +587,7 @@ export class MCPOpenAPIServer {
         inputSchema: tool.inputSchema
       }));
       
-      this.debug(`📋 Returning ${toolsList.length} tools to MCP client`);
+      this.telemetry.debug(`📋 Returning ${toolsList.length} tools to MCP client`);
       
       return { tools: toolsList };
     });
@@ -784,7 +601,7 @@ export class MCPOpenAPIServer {
         parameters: resource.parameters
       }));
       
-      this.debug(`📚 Returning ${resourcesList.length} resources to MCP client`);
+      this.telemetry.debug(`📚 Returning ${resourcesList.length} resources to MCP client`);
       
       return { resources: resourcesList };
     });
@@ -796,7 +613,7 @@ export class MCPOpenAPIServer {
         arguments: spec.arguments || []
       }));
       
-      this.debug(`💬 Returning ${promptsList.length} prompts to MCP client`);
+      this.telemetry.debug(`💬 Returning ${promptsList.length} prompts to MCP client`);
       
       return { prompts: promptsList };
     });
@@ -827,7 +644,7 @@ export class MCPOpenAPIServer {
       return await this.getPrompt(promptName, promptArgs || {});
     });
 
-    this.debug('✅ MCP request handlers setup complete');
+    this.telemetry.debug('✅ MCP request handlers setup complete');
   }
 
   private async executeTool(toolName: string, args: any, userContext?: { token?: string }) {
@@ -898,8 +715,8 @@ export class MCPOpenAPIServer {
     const url = `${baseUrl}${actualPath}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
     
     // Debug logging
-    this.debug(`Tool execution URL: ${url}`);
-    this.debug(`Method: ${method.toUpperCase()}`);
+    this.telemetry.debug(`Tool execution URL: ${url}`);
+    this.telemetry.debug(`Method: ${method.toUpperCase()}`);
     
     // Make HTTP request
     const fetchOptions: RequestInit = {
@@ -929,7 +746,7 @@ export class MCPOpenAPIServer {
       if (!response.ok) {
         // Log security events for monitoring
         if (response.status === 401 || response.status === 403) {
-          this.warn(`🔒 ${response.status} security error for tool ${toolName} - ${response.statusText}`);
+          this.telemetry.warn(`🔒 ${response.status} security error for tool ${toolName} - ${response.statusText}`);
         }
         
         // Handle authentication errors specifically
@@ -1003,7 +820,7 @@ export class MCPOpenAPIServer {
       };
     } catch (error) {
       // Handle network errors and other exceptions
-      this.error(`❌ Tool execution failed for ${toolName}: ${(error as Error).message}`);
+      this.telemetry.error(`❌ Tool execution failed for ${toolName}: ${(error as Error).message}`);
       
       return {
         content: [{
@@ -1101,9 +918,9 @@ export class MCPOpenAPIServer {
     const url = `${baseUrl}${pathPattern}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
     
     // Debug logging
-    this.debug(`Resource read URL: ${url}`);
+    this.telemetry.debug(`Resource read URL: ${url}`);
     if (resourceParams && Object.keys(resourceParams).length > 0) {
-      this.debug(`Resource parameters: ${JSON.stringify(resourceParams)}`);
+      this.telemetry.debug(`Resource parameters: ${JSON.stringify(resourceParams)}`);
     }
     
     try {
@@ -1114,7 +931,7 @@ export class MCPOpenAPIServer {
       if (!response.ok) {
         // Log security events for monitoring
         if (response.status === 401 || response.status === 403) {
-          this.warn(`🔒 ${response.status} security error for resource ${uri} - ${response.statusText}`);
+          this.telemetry.warn(`🔒 ${response.status} security error for resource ${uri} - ${response.statusText}`);
         }
         
         // Handle authentication errors specifically
@@ -1192,7 +1009,7 @@ export class MCPOpenAPIServer {
       };
     } catch (error) {
       // Handle network errors and other exceptions
-      this.error(`❌ Resource read failed for ${uri}: ${(error as Error).message}`);
+      this.telemetry.error(`❌ Resource read failed for ${uri}: ${(error as Error).message}`);
       
       return {
         contents: [{
@@ -1303,8 +1120,9 @@ export class MCPOpenAPIServer {
   async runStdio(): Promise<void> {
     // Set stdio mode flag to suppress debug logging
     this.isStdioMode = true;
+    this.updateTelemetryContext();
     
-    this.debug('🚀 Initializing MCP OpenAPI Server for stdio...');
+    this.telemetry.debug('🚀 Initializing MCP OpenAPI Server for stdio...');
     
     // Step 1: Load all data (tools, resources, prompts)
     await this.initialize();
@@ -1327,7 +1145,7 @@ export class MCPOpenAPIServer {
     // Step 4: Create transport
     const transport = new StdioServerTransport();
     
-    this.debug('🚀 MCP Server ready with capabilities: ' + JSON.stringify({
+    this.telemetry.debug('🚀 MCP Server ready with capabilities: ' + JSON.stringify({
       tools: this.tools.length,
       resources: this.resources.length, 
       prompts: this.prompts.size
@@ -1336,7 +1154,7 @@ export class MCPOpenAPIServer {
     // Step 5: Connect transport (MCP protocol handshake with proper capabilities)
     await this.server.connect(transport);
     
-    this.debug('🔌 MCP OpenAPI Server connected - ready for requests');
+    this.telemetry.debug('🔌 MCP OpenAPI Server connected - ready for requests');
   }
 
   // For standalone deployment (HTTP)
@@ -1353,7 +1171,7 @@ export class MCPOpenAPIServer {
         // Handle JSON-RPC 2.0 method calls
         const { method, params, id } = req.body;
         
-        this.debug(`MCP method call: ${method}`);
+        this.telemetry.debug(`MCP method call: ${method}`);
         
         let result;
         
@@ -1481,11 +1299,11 @@ export class MCPOpenAPIServer {
         (address.family === 'IPv6' ? `[${address.address}]` : address.address) : 
         'localhost';
       
-      this.info(`🚀 MCP OpenAPI Server running on port ${serverPort}`);
-      this.info(`📊 Health check: http://${host}:${serverPort}/health`);
-      this.info(`ℹ️  Server info: http://${host}:${serverPort}/info`);
+      this.telemetry.info(`🚀 MCP OpenAPI Server running on port ${serverPort}`);
+      this.telemetry.info(`📊 Health check: http://${host}:${serverPort}/health`);
+      this.telemetry.info(`ℹ️  Server info: http://${host}:${serverPort}/info`);
       
-      this.debug(`📋 Loaded ${this.specs.size} specs, ${this.tools.length} tools, ${this.resources.length} resources, ${this.prompts.size} prompts`);
+      this.telemetry.debug(`📋 Loaded ${this.specs.size} specs, ${this.tools.length} tools, ${this.resources.length} resources, ${this.prompts.size} prompts`);
     });
   }
 } 

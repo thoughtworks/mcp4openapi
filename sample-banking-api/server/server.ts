@@ -131,9 +131,9 @@ function saveProductsData() {
 }
 
 // Load OpenAPI specs
-const productSpec = YAML.load(path.join(__dirname, '../specs/openapi-banking-products.yaml'));
-const payeeSpec = YAML.load(path.join(__dirname, '../specs/openapi-banking-payees.yaml'));
-const paymentSpec = YAML.load(path.join(__dirname, '../specs/openapi-banking-payments.yaml'));
+const productSpec = YAML.load(path.join(__dirname, '../specs/banking-products.yaml'));
+const payeeSpec = YAML.load(path.join(__dirname, '../specs/banking-payees.yaml'));
+const paymentSpec = YAML.load(path.join(__dirname, '../specs/banking-payments.yaml'));
 
 // Create Express app
 const app: Application = express();

@@ -50,3 +50,8 @@ fileignoreconfig:
 - filename: mcp-openapi/src/server.ts
   checksum: 49fc19874b57b3c21a8b584cfe444dc5b6499673f536004148dfd6054cd910c0
 version: "1.0"
+
+fileignoreconfig:
+- filename: mcp-openapi/src/telemetry.ts
+  checksum: 179cf9144a76e5fd50a83653014e3985ca4e8a36d2e9bc4aee95f4c9a2077f12
+version: "1.0"

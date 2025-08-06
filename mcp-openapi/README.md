@@ -1,6 +1,6 @@
 # MCP OpenAPI Server
 
-A generic, configurable MCP (Model Context Protocol) server that automatically generates tools, resources, and prompts from OpenAPI specifications and hosts a proxy, via the MCP protocol, to those API endpoints.
+A multipurpose, configurable MCP (Model Context Protocol) server that automatically generates MCP tools, resources, and prompts from OpenAPI specifications and hosts a proxy, via the MCP protocol, to those API endpoints.
 
 Given a set of openapi specs, it will create, via sensible defaults, a set of MCP Tools and MCP Resources.  Also given a set of prompts provided as a set of JSON files, it will create MCP prompts for them and will be published together with the MCP Tools and Resources as a complete set of MCP capabilities to be used by any tool enabled LLM.
 
@@ -11,10 +11,15 @@ This app will work with an OpenAPI compliant endpoints and specification.  The s
 - 🔧 **Automatic Tool Generation**: Converts REST API endpoints to MCP tools
 - 📚 **Resource Management**: Exposes read-only data as MCP resources  
 - 💬 **Custom Prompts**: Load domain-specific prompt templates
-- ⚙️ **Configurable Mapping**: Override default tool/resource classification
+- ⚙️ **Configurable Mapping**: Override default tool/resource classification and function descriptions 
 - 🔐 **Authentication Support**: Bearer, API Key, and Basic auth
 - 🚀 **Multiple Deployment Modes**: stdio for IDEs, HTTP for standalone deployment
 - 📋 **Multi-Spec Support**: Load multiple OpenAPI specifications
+
+## Current Limitation
+Currently the app only takes a single network address as base backend API proxy address.
+
+Therefore it is only suitable to be run as a sidecar for microservices where proxying is to localhost or if proxying to many different endpoints, it'll expect an API gateway address.
 
 ## Installation
 
@@ -98,6 +103,32 @@ mcp-openapi-server --http
 ## Development Mode
 
 When developing the MCP OpenAPI server locally in your IDE, you can run it directly from the source code without installing globally:
+
+### OpenAPI Spec Architecture
+
+**Important**: This project uses a **spec duplication architecture** that mirrors real-world deployment scenarios:
+
+- **Source Specs**: The `sample-banking-api` project contains the authoritative OpenAPI specifications
+- **Example Specs**: The `mcp-openapi/examples/specs/` directory contains **duplicated copies** of these specs
+- **Development Default**: The MCP server defaults to using the example specs for development and testing
+
+#### Why Duplication?
+
+This architecture **intentionally mimics production environments** where:
+1. **API services** deploy their specs to accessible locations (registries, CDNs, etc.)
+2. **MCP servers** read specs from these deployed locations, not directly from source code
+3. **Spec changes** require explicit deployment/copying to be picked up by consumers
+
+#### Keeping Specs in Sync
+
+⚠️ **Manual Sync Required**: When you modify OpenAPI specs in `sample-banking-api/specs/`, you **must manually copy** them to `mcp-openapi/examples/specs/` for the MCP server to pick up the latest API signatures.
+
+```bash
+# After changing specs in sample-banking-api:
+cp sample-banking-api/specs/*.yaml mcp-openapi/examples/specs/
+```
+
+This manual step ensures you're consciously aware of API contract changes and their impact on MCP tool generation.
 
 ### Prerequisites
 ```bash
