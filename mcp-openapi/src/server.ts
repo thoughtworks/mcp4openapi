@@ -1474,11 +1474,16 @@ export class MCPOpenAPIServer {
       });
     });
 
-    this.app.listen(serverPort, () => {
+    const server = this.app.listen(serverPort, () => {
       // HTTP server startup - use info level
+      const address = server.address();
+      const host = typeof address === 'object' && address ? 
+        (address.family === 'IPv6' ? `[${address.address}]` : address.address) : 
+        'localhost';
+      
       this.info(`🚀 MCP OpenAPI Server running on port ${serverPort}`);
-      this.info(`📊 Health check: http://localhost:${serverPort}/health`);
-      this.info(`ℹ️  Server info: http://localhost:${serverPort}/info`);
+      this.info(`📊 Health check: http://${host}:${serverPort}/health`);
+      this.info(`ℹ️  Server info: http://${host}:${serverPort}/info`);
       
       this.debug(`📋 Loaded ${this.specs.size} specs, ${this.tools.length} tools, ${this.resources.length} resources, ${this.prompts.size} prompts`);
     });
