@@ -1,7 +1,5 @@
 import { MCPCapabilities } from './types.js';
 
-export { MCPCapabilities };
-
 /**
  * Generic LLM Interface - works with any LLM implementation
  * This keeps the orchestrator clean and swappable

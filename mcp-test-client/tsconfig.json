@@ -3,15 +3,18 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "node",
-    "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true,
-    "allowJs": true,
-    "sourceMap": true,
+    "lib": ["ES2022"],
     "outDir": "./dist",
+
     "strict": true,
-    "declaration": true,
+    "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "removeComments": false,
+    "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "types": ["jest", "node"]
   },
@@ -21,6 +24,7 @@
   ],
   "exclude": [
     "node_modules",
-    "dist"
+    "dist",
+    "**/*.test.ts"
   ]
 } 

@@ -1,25 +1,28 @@
 # MCP-OpenAPI Model Context Protocol wrapper for OpenAPI compliant endpoints
+This is a Proof-of-Concept project implementing a multi-purpose OpenAPI MCP Server that can be used to proxy any OpenAPI compliant API backend with an MCP Server protocol
 
-The main application mcp-openapi provides a generic MCP Server wrapper over any OpenAPI compliant endpoints.  It will, given the OpenAPI specs, generate MCP tools & resources with some sensible defaults and overridable via configuration.  It will also allow definition of additional MCP Prompts, via config.  It will hosts the MCP end points for all these MCP capabilities and integrate with the backend APIs as per the configuration.
+The project also comes with an example OpenAPI application hosting some sample banking APIs with some manufactured data, a demo MCP Client application that provides an example use-case of an MCP Client interacting with the MCP Server proxying some sample problems between the sample banking APIs and an LLM (hosting via LMStudio).  
 
-This project provides comprehensive set of apps demonstrating how to use the mcp-openapi MCP Server over existing APIs via the sample banking api app.  
+Demo/Testing can also be done without the demo MCP application or LM Studio via integrating the MCP server with an MCP enabled tools such as Cursor IDE (tested) or Windsurf (not tested), etc.
 
-The mcp-test-client is an example MCP client taking in some pre-baked prompts containing some common, but manufactured, banking scenarios and connecting & orchestrating between the scenarios, the MCP server fronting the sample banking APIs and an LLM.
+All the above are structured under 3 separate folders under this project:
 
-The sample-banking-api and mcp-test-client app are not expected to be re-used and is for demo purposes only.
+1. **mcp-openapi** is the reference implementation of the OpenAPI MCP proxy
+2. **mcp-test-client** is the demo test client with some sample questions based on the manufactured data in the sample banking app
+3. **sample-banking-api** is the sample banking application with a number of OpenAPI endpoints and manufactured data
 
 NOTE:  This mcp-openapi app is not a replacement for https://github.com/ReAPI-com/mcp-openapi project that is enabling IDEs like Cursor to connect to open api specs to support api development.
 
 ## 🔄 Integration Flow
 
 ```
-Sample Banking API ←→ MCP OpenAPI Server ←→ Demo/Test Banking MCP Client ←→ LLM/AI Application
+Sample Banking API ←→ MCP OpenAPI Server ←→ Demo/Test Banking MCP Client ←→ LLM via LM Studio
 ```
+or
 
-1. **Sample Banking API** provides some RESTful banking services with authentication
-2. **MCP OpenAPI Server** wraps the API as MCP tools and resources
-3. **Test/Demo MCP Client** consumes the MCP server for AI integration
-4. **LLM/AI Application** uses the tools through the MCP protocol - for the demo/test we have implemented LM Studio integration
+```
+Sample Banking API ←→ MCP OpenAPI Server ←→ Cursor IDE
+```
 
 
 ## 🏗️ Project Structure
@@ -27,27 +30,27 @@ Sample Banking API ←→ MCP OpenAPI Server ←→ Demo/Test Banking MCP Client
 This repository contains three applications:
 
 ### 🔌 [`mcp-openapi/`](./mcp-openapi/)
-This contain the main application, a **generic, configurable MCP server** that automatically generates MCP tools and resources from OpenAPI specifications:
+This contain the main application, a **multi-purpose, configurable MCP server** that automatically generates MCP tools and resources from OpenAPI specifications:
 - Automatic tool/resource generation from OpenAPI specs
 - Token passthrough authentication
-- Custom prompt templates
+- Addition of custom prompt templates
 - Multiple deployment modes (stdio/HTTP)
-- Comprehensive test coverage (61/61 tests passing)
 
 **Quick Start:**
 ```bash
 cd mcp-openapi
 npm install
-npm run dev -- --specs ./examples/specs --config ./examples/mcp-config.json --verbose
+npm run build
+npm run dev
 ```
 
+The "dev" startup is pre-configured to integrate with the sample banking api app.  Please refer to the README in the app folder for more details.
 
 ### 📊 [`sample-banking-api/`](./sample-banking-api/)
 An example **Sample banking API implementation** with:
 - RESTful endpoints for payments, payees, and products
 - basic JWT authentication and validation
 - OpenAPI specifications
-- Comprehensive test suite
 - Manufactured data, via JSON files, to support the app 
 - Purpose of this is to support the demo and usage of the main application
 
@@ -55,43 +58,30 @@ An example **Sample banking API implementation** with:
 ```bash
 cd sample-banking-api
 npm install
-npm run server:dev
+npm start
 ```
+
+Please refer to the README in the app folder for more details.
 
 ### 🧪 [`mcp-test-client/`](./mcp-test-client/)
-An example **test client application, including an MCP Client** for validating MCP server functionality over the sample banking app.  The sample client app will also integrate with an LLM, LM Studio integration provided, to demo the MCP flow.
+A **Demo MCP client application** for validating MCP server functionality over the sample banking app.  The sample client app will also integrate with an LLM, via a local LM Studio integration, to demo the MCP flow.
 
+This requires LM Studio to be running locally on default port 1234 (i.e. http://localhost:1234), but configurable if it is running on different port.  LM Studio must be loaded with an LLM that supports tool calling (tested on meta-llama-3.1-8b-instruct model).
 
-## 🚀 Getting Started
-
-### 1. Start the Banking API
+**Quick Start:**
 ```bash
-cd sample-banking-api
+cd mcp-test-client
 npm install
-npm run server:dev
-# Server runs on http://localhost:3001
+npm start
 ```
+This will launch the demo mcp client which is a CLI menu driven app with a few pre-configured test scenarios against the manufactured data in the sample banking app.
 
-### 2. Start the MCP Server
-```bash
-cd mcp-openapi
-npm install
-npm run dev -- --specs ./examples/specs --config ./examples/mcp-config.json --verbose
-# MCP server runs on http://localhost:4000 and will connect to banking API to serve requests
-```
-
-### 3. Start/Load you LLM in LM Studio
-Load and start your LLM in LM Studio.  This project assumes the LM Studio API will be running on http://localhost:1234
-
-If you need to change the URL, update the /examples/mcp-config.json file in the mcp-openapi app and restart it.
-
-### 4. Testing or running the demo
-Once you've started all the different moving parts to test/demo.  Refer to the mcp-client-test Readme to launch the demo/client.  It is menu driven with a number of pre-build test scenarios using the manufactured data in the sample banking api app.
+Please refer to the README in the app folder for more details.
 
 ## 📋 Features
 
-### Banking API Features
-- ✅ Complete CRUD operations for payments, payees, products
+### Sample Banking API Features
+- ✅ Sample data with APIs for payments, payees, products
 - ✅ JWT authentication with bearer tokens
 - ✅ OpenAPI 3.0 specifications
 - ✅ Request validation and error handling
@@ -135,11 +125,8 @@ npm test
 ## 🎯 Use Cases
 
 This project demonstrates:
-- **API Wrapping**: How to wrap existing REST APIs as MCP servers
-- **Authentication Patterns**: Token passthrough for secure API access
-- **Error Handling**: Production-ready error handling with security monitoring
-- **Testing Strategies**: Comprehensive test coverage for API wrappers
-- **Development Workflow**: Local development with hot reloading
+- **Multi-purpose API Wrapping**: How to wrap existing REST APIs with an MCP server
+- **MCP Prompts augmentation**: Adding custom MCP prompts to enable higher order/composite usage of those API via MCP
 
 ## 🤝 Contributing
 

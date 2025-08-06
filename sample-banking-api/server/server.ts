@@ -7,9 +7,13 @@ import jwt from 'jsonwebtoken';
 import { validationResult } from 'express-validator';
 import fs from 'fs';
 import path from 'path';
-import payeeRoutes, { setPayeesDataReference, setSavePayeesDataFunction } from './routes/payeeRoutes';
-import paymentRoutes, { setPaymentsDataReference, setSavePaymentsDataFunction, setPayeesDataReference as setPayeesDataReferenceForPayments } from './routes/paymentRoutes';
-import productRoutes, { setProductsDataReference } from './routes/productRoutes';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+import payeeRoutes, { setPayeesDataReference, setSavePayeesDataFunction } from './routes/payeeRoutes.js';
+import paymentRoutes, { setPaymentsDataReference, setSavePaymentsDataFunction, setPayeesDataReference as setPayeesDataReferenceForPayments } from './routes/paymentRoutes.js';
+import productRoutes, { setProductsDataReference } from './routes/productRoutes.js';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 
@@ -379,6 +383,6 @@ process.on('SIGINT', () => {
 export default app;
 
 // Start the server if this file is run directly
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   startServer();
 } 
