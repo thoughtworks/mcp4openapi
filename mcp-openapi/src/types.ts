@@ -78,4 +78,5 @@ export interface ServerOptions {
   port?: number;
   verbose?: boolean;
   baseUrl?: string;
+  maxToolNameLength?: number;
 } 

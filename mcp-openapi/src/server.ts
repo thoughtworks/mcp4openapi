@@ -23,6 +23,7 @@ import {
   ServerOptions
 } from './types.js';
 import { Telemetry, TelemetryContext } from './telemetry.js';
+import { PACKAGE_NAME, PACKAGE_VERSION } from './package-info.js';
 
 export class MCPOpenAPIServer {
   private server: Server;
@@ -61,6 +62,7 @@ export class MCPOpenAPIServer {
       promptsDir: './examples/prompts',
       port: 4000,
       verbose: true,
+      maxToolNameLength: 48,
       ...options
     };
 
@@ -70,7 +72,7 @@ export class MCPOpenAPIServer {
     this.options.promptsDir = path.resolve(this.options.promptsDir!);
 
     this.server = new Server(
-      { name: "mcp-openapi-server", version: "1.0.0" },
+      { name: PACKAGE_NAME, version: PACKAGE_VERSION },
       { 
         capabilities: { 
           tools: {},
@@ -329,8 +331,8 @@ export class MCPOpenAPIServer {
   private generateShortToolName(specId: string, pathPattern: string, method: string): string {
     // Server name is "mcp-openapi" (11 chars), leaving ~49 chars for tool name to stay under 60
     // Reason for short tool name is because some MCP clients like Cursor IDE, as of this writing, 
-    // has a limit of 60 chars for tool name
-    const maxToolNameLength = 48;
+    // has a limit of 60 chars for tool name + mcp server name
+    const maxToolNameLength = this.options.maxToolNameLength!;
     
     // Method abbreviations
     const methodAbbrev: Record<string, string> = {
@@ -1129,7 +1131,7 @@ export class MCPOpenAPIServer {
     
     // Step 2: Create new MCP server with LOADED capabilities 
     this.server = new Server(
-      { name: "mcp-openapi-server", version: "1.0.0" },
+      { name: PACKAGE_NAME, version: PACKAGE_VERSION },
       { 
         capabilities: { 
           tools: this.tools.reduce((acc, tool) => ({ ...acc, [tool.name]: {} }), {}),
@@ -1275,7 +1277,7 @@ export class MCPOpenAPIServer {
         tools: this.tools.length,
         resources: this.resources.length,
         prompts: this.prompts.size,
-        version: '1.0.0'
+        version: PACKAGE_VERSION
       });
     });
 

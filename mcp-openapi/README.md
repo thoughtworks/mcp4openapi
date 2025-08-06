@@ -636,12 +636,13 @@ export async function startServer(options?: ServerOptions & { mode?: 'stdio' | '
 
 ```typescript
 interface ServerOptions {
-  specsDir?: string;        // Directory containing OpenAPI specs
-  configFile?: string;      // Path to MCP configuration file
-  promptsDir?: string;      // Directory containing prompt templates
-  port?: number;           // HTTP server port
-  verbose?: boolean;       // Enable verbose logging
-  baseUrl?: string;        // Base URL for backend APIs (overrides config file)
+  specsDir?: string;           // Directory containing OpenAPI specs
+  configFile?: string;         // Path to MCP configuration file
+  promptsDir?: string;         // Directory containing prompt templates
+  port?: number;              // HTTP server port
+  verbose?: boolean;          // Enable verbose logging
+  baseUrl?: string;           // Base URL for backend APIs (overrides config file)
+  maxToolNameLength?: number; // Maximum length for generated tool names (default: 48)
 }
 ```
 
@@ -649,14 +650,15 @@ interface ServerOptions {
 
 ```
 Options:
-  -s, --specs <dir>     Directory containing OpenAPI specifications (default: "./examples/specs")
-  -c, --config <file>   Configuration file path (default: "./examples/mcp-config.json")  
-  -p, --prompts <dir>   Directory containing prompt specifications (default: "./examples/prompts")
-  --port <number>       Port for HTTP server mode (default: "4000")
-  --base-url <url>      Base URL for backend APIs (overrides config file)
-  --http                Run in HTTP server mode instead of stdio (default: false)
-  -v, --verbose         Enable verbose logging (default: true)
-  -h, --help            Display help for command
+  -s, --specs <dir>                Directory containing OpenAPI specifications (default: "./examples/specs")
+  -c, --config <file>              Configuration file path (default: "./examples/mcp-config.json")  
+  -p, --prompts <dir>              Directory containing prompt specifications (default: "./examples/prompts")
+  --port <number>                  Port for HTTP server mode (default: "4000")
+  --base-url <url>                 Base URL for backend APIs (overrides config file)
+  --max-tool-name-length <number>  Maximum length for generated tool names (default: "48")
+  --http                           Run in HTTP server mode instead of stdio (default: false)
+  -v, --verbose                    Enable verbose logging (default: true)
+  -h, --help                       Display help for command
 ```
 
 **Mode Selection:**

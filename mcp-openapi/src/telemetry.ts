@@ -7,6 +7,7 @@ import {
   MCPResource,
   ServerOptions
 } from './types.js';
+import { PACKAGE_NAME } from './package-info.js';
 
 export interface TelemetryContext {
   options: ServerOptions;
@@ -31,7 +32,7 @@ export class Telemetry {
           method: 'notifications/message',
           params: {
             level: 'debug',
-            logger: 'mcp-openapi-server',
+            logger: PACKAGE_NAME,
             data: message
           }
         }).catch(() => {
@@ -53,7 +54,7 @@ export class Telemetry {
           method: 'notifications/message',
           params: {
             level: 'info',
-            logger: 'mcp-openapi-server',
+            logger: PACKAGE_NAME,
             data: message
           }
         }).catch(() => {
@@ -74,7 +75,7 @@ export class Telemetry {
         method: 'notifications/message',
         params: {
           level: 'warning',
-          logger: 'mcp-openapi-server',
+          logger: PACKAGE_NAME,
           data: message
         }
       }).catch(() => {
@@ -94,7 +95,7 @@ export class Telemetry {
         method: 'notifications/message',
         params: {
           level: 'error',
-          logger: 'mcp-openapi-server',
+          logger: PACKAGE_NAME,
           data: message
         }
       }).catch(() => {
