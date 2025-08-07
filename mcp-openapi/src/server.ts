@@ -23,6 +23,7 @@ import {
   ServerOptions
 } from './types.js';
 import { Telemetry, TelemetryContext } from './telemetry.js';
+import { HttpSetup } from './httpSetup.js';
 import { PACKAGE_NAME, PACKAGE_VERSION } from './package-info.js';
 
 export class MCPOpenAPIServer {
@@ -329,6 +330,14 @@ export class MCPOpenAPIServer {
     return this.generateShortToolName(specId, pathPattern, method);
   }
 
+  /**
+ * Generates concise, human-readable MCP tool names from OpenAPI specs by combining
+ * specId, HTTP method, and path components while staying under length limits for
+ * MCP client compatibility (e.g., Cursor IDE's 60-character tool name restriction).
+ * 
+ * MCP tool names are required as per the specs to register all the various MCP 
+ * capabilities (tools, resources, prompts).  It also has to be unique.
+ */
   private generateShortToolName(specId: string, pathPattern: string, method: string): string {
     // Server name is "mcp-openapi" (11 chars), leaving ~49 chars for tool name to stay under 60
     // Reason for short tool name is because some MCP clients like Cursor IDE, as of this writing, 
@@ -518,10 +527,11 @@ export class MCPOpenAPIServer {
     };
   }
 
-  private sanitizePath(pathPattern: string): string {
-    return pathPattern.replace(/[^a-zA-Z0-9]/g, '_');
-  }
-
+ /**
+ * Builds JSON Schema for MCP tool input parameters by extracting path parameters,
+ * query parameters, and request body schema from OpenAPI operation definitions.
+ * Used during tool generation to define the input validation schema for each MCP tool.
+ */
   private buildInputSchema(operation: any, pathPattern: string) {
     const properties: any = {};
     const required: string[] = [];
@@ -570,6 +580,12 @@ export class MCPOpenAPIServer {
     };
   }
 
+ /**
+ * Configures MCP protocol request handlers for stdio transport, mapping standard
+ * MCP methods (tools/list, resources/read, etc.) to server implementation functions.
+ * Sets up the bidirectional communication layer between MCP clients and this server.
+ * Note: HTTP mode uses manual request routing instead of these handlers.
+ */
   private setupRequestHandlers(): void {
     // Set up MCP protocol handlers for stdio transport
     this.telemetry.debug('🔧 Setting up MCP request handlers...');
@@ -1136,147 +1152,20 @@ export class MCPOpenAPIServer {
     
     const serverPort = port || this.options.port!;
     
-    this.app.post('/mcp', async (req, res) => {
-      try {
-        // Extract user context from request
-        const userContext = this.extractUserContext(req);
-        
-        // Handle JSON-RPC 2.0 method calls
-        const { method, params, id } = req.body;
-        
-        this.telemetry.debug(`MCP method call: ${method}`);
-        
-        let result;
-        
-        switch (method) {
-          case 'initialize':
-            result = {
-              message: "MCP server running",
-              authMode: userContext.token ? "user-token" : "service-token",
-              capabilities: {
-                tools: { listChanged: true },
-                resources: { listChanged: true, subscribe: false },
-                prompts: { listChanged: true }
-              }
-            };
-            break;
-            
-          case 'tools/list':
-            result = {
-              tools: this.tools.map(tool => ({
-                name: tool.name,
-                description: tool.description,
-                inputSchema: tool.inputSchema
-              }))
-            };
-            break;
-            
-          case 'resources/list':
-            result = {
-              resources: this.resources.map(resource => ({
-                uri: resource.uri,
-                name: resource.name,
-                description: resource.description,
-                mimeType: resource.mimeType,
-                parameters: resource.parameters
-              }))
-            };
-            break;
-            
-          case 'prompts/list':
-            result = {
-              prompts: Array.from(this.prompts.entries()).map(([name, spec]) => ({
-                name: name,
-                description: spec.description || `${name} prompt template`,
-                arguments: spec.arguments || []
-              }))
-            };
-            break;
-            
-          case 'tools/call':
-            const toolName = params?.name;
-            const toolArgs = params?.arguments || {};
-            if (!toolName) {
-              throw new Error('Tool name is required');
-            }
-            result = await this.executeTool(toolName, toolArgs, userContext);
-            break;
-            
-          case 'resources/read':
-            const resourceUri = params?.uri;
-            if (!resourceUri) {
-              throw new Error('Resource URI is required');
-            }
-            const resourceParams = params?.parameters || {};
-            
-
-            
-            result = await this.readResource(resourceUri, userContext, resourceParams);
-            break;
-            
-          case 'prompts/get':
-            const promptName = params?.name;
-            const promptArgs = params?.arguments || {};
-            if (!promptName) {
-              throw new Error('Prompt name is required');
-            }
-            result = await this.getPrompt(promptName, promptArgs);
-            break;
-            
-          default:
-            throw new Error(`Unknown method: ${method}`);
-        }
-        
-        res.json({ 
-          jsonrpc: "2.0", 
-          result,
-          id
-        });
-      } catch (error) {
-        res.status(500).json({ 
-          jsonrpc: "2.0",
-          error: { code: -32603, message: (error as Error).message },
-          id: req.body.id 
-        });
-      }
+    const httpSetup = new HttpSetup({
+      app: this.app,
+      specs: this.specs,
+      tools: this.tools,
+      resources: this.resources,
+      prompts: this.prompts,
+      telemetry: this.telemetry,
+      executeTool: this.executeTool.bind(this),
+      readResource: this.readResource.bind(this),
+      getPrompt: this.getPrompt.bind(this),
+      extractUserContext: this.extractUserContext.bind(this)
     });
-
-    this.app.get('/health', (req, res) => {
-      res.json({ 
-        status: 'ok', 
-        specs: Array.from(this.specs.keys()),
-        tools: this.tools.length,
-        resources: this.resources.length,
-        prompts: this.prompts.size,
-        version: PACKAGE_VERSION
-      });
-    });
-
-    this.app.get('/info', (req, res) => {
-      res.json({
-        specs: Array.from(this.specs.entries()).map(([id, spec]) => ({
-          id,
-          title: spec.info.title,
-          version: spec.info.version
-        })),
-        tools: this.tools.map(t => ({ name: t.name, description: t.description })),
-        resources: this.resources.map(r => ({ uri: r.uri, name: r.name })),
-        prompts: Array.from(this.prompts.keys())
-      });
-    });
-
-    const server = this.app.listen(serverPort, () => {
-      // HTTP server startup - use info level
-      const address = server.address();
-      const host = typeof address === 'object' && address ? 
-        (address.family === 'IPv6' ? `[${address.address}]` : address.address) : 
-        'localhost';
-      
-      this.telemetry.info(`🚀 MCP OpenAPI Server running on port ${serverPort}`);
-      this.telemetry.info(`📊 Health check: http://${host}:${serverPort}/health`);
-      this.telemetry.info(`ℹ️  Server info: http://${host}:${serverPort}/info`);
-      
-      this.telemetry.debug(`📋 Loaded ${this.specs.size} specs, ${this.tools.length} tools, ${this.resources.length} resources, ${this.prompts.size} prompts`);
-    });
+    
+    httpSetup.setupRoutes();
+    await httpSetup.startServer(serverPort);
   }
 } 
