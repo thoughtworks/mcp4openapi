@@ -510,10 +510,32 @@ The MCP server provides authentication-aware error handling with structured resp
 
 ### Security Features
 
+- **Request Size Limiting**: Configurable JSON payload size limits prevent DoS attacks (default: 2MB)
 - **Security Event Logging**: 401/403 errors are logged with `[SECURITY]` prefix for monitoring
 - **Error Context Preservation**: Backend API error responses are included in `details`
 - **Privacy Protection**: Query parameters are stripped from URLs in error messages
 - **Structured Responses**: All errors return JSON with consistent format instead of throwing exceptions
+
+#### Request Size Configuration
+
+The server automatically limits JSON request body sizes to prevent denial-of-service attacks and memory exhaustion:
+
+```bash
+# Use default 2MB limit
+mcp-openapi-server --http
+
+# Set custom limit
+mcp-openapi-server --http --max-request-size 5mb
+
+# Other valid formats
+mcp-openapi-server --max-request-size 1024kb
+mcp-openapi-server --max-request-size 512kb
+```
+
+**Recommended limits for banking APIs:**
+- **Conservative**: `1mb` - Handles most banking operations with safety margin
+- **Standard**: `2mb` (default) - Balances security and functionality  
+- **Liberal**: `5mb` - For batch operations or document attachments
 
 ## OpenAPI Specification Setup
 
@@ -643,6 +665,7 @@ interface ServerOptions {
   verbose?: boolean;          // Enable verbose logging
   baseUrl?: string;           // Base URL for backend APIs (overrides config file)
   maxToolNameLength?: number; // Maximum length for generated tool names (default: 48)
+  maxRequestSize?: string;    // Maximum size for JSON request bodies (default: "2mb")
 }
 ```
 
@@ -656,6 +679,7 @@ Options:
   --port <number>                  Port for HTTP server mode (default: "4000")
   --base-url <url>                 Base URL for backend APIs (overrides config file)
   --max-tool-name-length <number>  Maximum length for generated tool names (default: "48")
+  --max-request-size <size>        Maximum size for JSON request bodies (default: "2mb")
   --http                           Run in HTTP server mode instead of stdio (default: false)
   -v, --verbose                    Enable verbose logging (default: true)
   -h, --help                       Display help for command

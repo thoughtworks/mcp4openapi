@@ -19,6 +19,7 @@ program
   .option('--port <number>', 'Port for HTTP server mode', '4000')
   .option('--base-url <url>', 'Base URL for backend APIs (overrides config file)')
   .option('--max-tool-name-length <number>', 'Maximum length for generated tool names', '48')
+  .option('--max-request-size <size>', 'Maximum size for JSON request bodies', '2mb')
   .option('--http', 'Run in HTTP server mode instead of stdio', false)
   .option('-v, --verbose', 'Enable verbose logging', true)
   .action(async (options) => {
@@ -29,7 +30,8 @@ program
       port: parseInt(options.port),
       verbose: options.verbose,
       ...(options.baseUrl && { baseUrl: options.baseUrl }),
-      ...(options.maxToolNameLength && { maxToolNameLength: parseInt(options.maxToolNameLength) })
+      ...(options.maxToolNameLength && { maxToolNameLength: parseInt(options.maxToolNameLength) }),
+      ...(options.maxRequestSize && { maxRequestSize: options.maxRequestSize })
     };
 
     const server = new MCPOpenAPIServer(serverOptions);

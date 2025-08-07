@@ -63,6 +63,7 @@ export class MCPOpenAPIServer {
       port: 4000,
       verbose: true,
       maxToolNameLength: 48,
+      maxRequestSize: '2mb',
       ...options
     };
 
@@ -102,7 +103,7 @@ export class MCPOpenAPIServer {
   private setupExpress() {
     const corsOptions = this.config.cors || {};
     this.app.use(cors(corsOptions));
-    this.app.use(express.json());
+    this.app.use(express.json({ limit: this.options.maxRequestSize }));
   }
 
   async initialize(): Promise<void> {

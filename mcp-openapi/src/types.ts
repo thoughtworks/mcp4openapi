@@ -86,4 +86,5 @@ export interface ServerOptions {
   verbose?: boolean;
   baseUrl?: string;
   maxToolNameLength?: number;
+  maxRequestSize?: string;
 } 
