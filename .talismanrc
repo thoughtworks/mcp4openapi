@@ -81,3 +81,8 @@ fileignoreconfig:
 - filename: mcp-openapi/src/server.ts
   checksum: 9abc2b04e3b17b787244e7ae6b18212fdac903f1e4571ee874fcf053cfcb602b
 version: "1.0"
+
+fileignoreconfig:
+- filename: mcp-test-client/package-lock.json
+  checksum: a3af791e81a56f79dce105b8d9da30d52083f619442c17bb09dd825ee621086a
+version: "1.0"
