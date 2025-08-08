@@ -87,4 +87,11 @@ export interface ServerOptions {
   baseUrl?: string;
   maxToolNameLength?: number;
   maxRequestSize?: string;
+  // HTTPS configuration
+  https?: boolean;
+  httpsPort?: number;
+  keyFile?: string;
+  certFile?: string;
+  pfxFile?: string;
+  passphrase?: string;
 } 

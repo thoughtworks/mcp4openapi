@@ -4,7 +4,7 @@
       "id": "fraud_investigation",
       "name": "Fraud Investigation - Power Company Payment", 
       "description": "Investigate a high-value utility payment using real sample data",
-      "userPrompt": "I need to investigate a $750 payment made to 'Power Company Australia' (payee_9n8m7l6k5j4i3h2g) from account 9876543210. Can you help me analyze this for potential fraud using the fraud analysis tools?"
+      "userPrompt": "I need to investigate a $750 payment made to 'Power Company Australia' (payee_9n8m7l6k5j4i3h2g) from account 9876543210 for potential fraud."
     },
     {
       "id": "loan_recommendation",

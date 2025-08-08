@@ -835,8 +835,11 @@ export class MCPOpenAPIServer {
     }
   }
 
-
-
+  /**
+   * Reads an MCP resource by URI, handling special server info resource and
+   * parameter substitution. Supports both exact and template-based resource URIs.
+   * Returns the resource content as JSON.
+   */
   private async readResource(uri: string, userContext?: { token?: string }, resourceParams?: Record<string, any>) {
     // Handle special server info resource
     if (uri === 'mcp-openapi://server/info') {
@@ -860,8 +863,6 @@ export class MCPOpenAPIServer {
     if (!resource) {
       throw new Error(`Resource ${uri} not found`);
     }
-
-
 
     // Parse URI to get spec and path
     const [specId, pathAfterProtocol] = uri.split('://');
@@ -1159,6 +1160,7 @@ export class MCPOpenAPIServer {
       resources: this.resources,
       prompts: this.prompts,
       telemetry: this.telemetry,
+      options: this.options,
       executeTool: this.executeTool.bind(this),
       readResource: this.readResource.bind(this),
       getPrompt: this.getPrompt.bind(this),

@@ -21,6 +21,12 @@ program
   .option('--max-tool-name-length <number>', 'Maximum length for generated tool names', '48')
   .option('--max-request-size <size>', 'Maximum size for JSON request bodies', '2mb')
   .option('--http', 'Run in HTTP server mode instead of stdio', false)
+  .option('--https', 'Enable HTTPS mode (requires --key-file and --cert-file or --pfx-file)', false)
+  .option('--https-port <number>', 'Port for HTTPS server mode', '4443')
+  .option('--key-file <path>', 'Path to private key file for HTTPS')
+  .option('--cert-file <path>', 'Path to certificate file for HTTPS')
+  .option('--pfx-file <path>', 'Path to PFX/PKCS12 file for HTTPS (alternative to key/cert)')
+  .option('--passphrase <passphrase>', 'Passphrase for encrypted private key')
   .option('-v, --verbose', 'Enable verbose logging', true)
   .action(async (options) => {
     const serverOptions: ServerOptions = {
@@ -31,13 +37,20 @@ program
       verbose: options.verbose,
       ...(options.baseUrl && { baseUrl: options.baseUrl }),
       ...(options.maxToolNameLength && { maxToolNameLength: parseInt(options.maxToolNameLength) }),
-      ...(options.maxRequestSize && { maxRequestSize: options.maxRequestSize })
+      ...(options.maxRequestSize && { maxRequestSize: options.maxRequestSize }),
+      // HTTPS options
+      https: options.https,
+      ...(options.httpsPort && { httpsPort: parseInt(options.httpsPort) }),
+      ...(options.keyFile && { keyFile: options.keyFile }),
+      ...(options.certFile && { certFile: options.certFile }),
+      ...(options.pfxFile && { pfxFile: options.pfxFile }),
+      ...(options.passphrase && { passphrase: options.passphrase })
     };
 
     const server = new MCPOpenAPIServer(serverOptions);
 
     try {
-      if (options.http) {
+      if (options.http || options.https) {
         await server.runHttp();
       } else {
         await server.runStdio();

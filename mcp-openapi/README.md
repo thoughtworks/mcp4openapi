@@ -232,6 +232,7 @@ curl http://localhost:4000/info
 - **Banking Examples**: Use the pre-configured banking examples in `./examples/` for testing
 - **Authentication Testing**: Set environment variables for token passthrough testing
 - **Mode Selection**: Choose stdio for IDE integration, HTTP for web APIs
+- **Testing**: ⚠️ **Stop `sample-banking-api` server before running tests** - tests expect specific error conditions
 
 ## Usage Modes
 
@@ -800,8 +801,14 @@ mcp-openapi-server --verbose
 
 The project includes comprehensive unit and integration tests:
 
+⚠️ **Important Testing Requirement**: 
+**Stop the `sample-banking-api` server before running tests**. The integration tests will fail if the banking API server is running because the tests expect specific error conditions that get masked when the real API responds.
+
 ```bash
-# Run all tests
+# FIRST: Stop the sample-banking-api if it's running
+# (In the sample-banking-api directory: Ctrl+C or kill the process)
+
+# THEN: Run all tests
 npm test
 
 # Run unit tests only
