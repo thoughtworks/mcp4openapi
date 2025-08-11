@@ -95,7 +95,10 @@ Please refer to the README in the app folder for more details.
 - ✅ Configuration-driven overrides
 - ✅ Custom prompt templates
 - ✅ Enhanced error handling with security monitoring
-- ✅ Multiple transport modes (stdio/HTTP)
+- ✅ Multiple transport modes (stdio/MCP Streaming HTTP/HTTPS)
+- ✅ MCP Streaming HTTP protocol with session management
+- ✅ HTTPS support with TLS encryption for secure deployments
+- 🚧 Server-Sent Events (SSE) support (placeholder for future implementation)
 
 ## 🔐 Authentication
 

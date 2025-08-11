@@ -13,7 +13,7 @@ This app will work with an OpenAPI compliant endpoints and specification.  The s
 - 💬 **Custom Prompts**: Load domain-specific prompt templates
 - ⚙️ **Configurable Mapping**: Override default tool/resource classification and function descriptions 
 - 🔐 **Authentication Support**: Bearer, API Key, and Basic auth
-- 🚀 **Multiple Deployment Modes**: stdio for IDEs, HTTP for standalone deployment
+- 🚀 **Multiple Deployment Modes**: stdio for IDEs, MCP Streaming HTTP for web deployment
 - 📋 **Multi-Spec Support**: Load multiple OpenAPI specifications
 
 ## Current Limitation
@@ -52,7 +52,7 @@ specs/
 mcp-openapi-server
 ```
 
-**For Standalone Deployment (HTTP mode):**
+**For Standalone Deployment (MCP Streaming HTTP mode):**
 ```bash
 mcp-openapi-server --http --port 4000
 ```
@@ -84,20 +84,32 @@ mcp-openapi-server --http --base-url https://api.example.com --specs ./specs --p
 - ✅ Direct MCP client connections
 - ✅ Microservices with MCP protocol
 
-**When to use HTTP Mode (`--http` flag):**
+**When to use MCP Streaming HTTP Mode (`--http` flag):**
 - ✅ Web application integration
 - ✅ Development and testing with HTTP clients
 - ✅ Health checks and monitoring endpoints
 - ✅ Docker deployments with port mapping
 - ✅ Load balancing and reverse proxy setups
+- ✅ Session-based MCP client connections
+- 🚧 Future Server-Sent Events (SSE) streaming support
+
+**When to use HTTPS Mode (`--https` flag):**
+- ✅ Production deployments requiring encryption
+- ✅ Secure MCP client connections over TLS
+- ✅ Compliance with security policies
+- ✅ Public-facing MCP server deployments
+- ✅ Integration with enterprise security infrastructure
 
 **Quick Mode Selection:**
 ```bash
 # For IDEs and MCP clients (recommended)
 mcp-openapi-server
 
-# For web APIs and testing
+# For web APIs and MCP streaming HTTP
 mcp-openapi-server --http
+
+# For secure production deployments
+mcp-openapi-server --https --key-file ./certs/server.key --cert-file ./certs/server.crt
 ```
 
 ## Development Mode
@@ -525,10 +537,13 @@ The server automatically limits JSON request body sizes to prevent denial-of-ser
 # Use default 2MB limit
 mcp-openapi-server --http
 
-# Set custom limit
+# Set custom request limit
 mcp-openapi-server --http --max-request-size 5mb
 
-# Other valid formats
+# Set custom response limit (for large backend API responses)
+mcp-openapi-server --http --max-response-size-mb 100
+
+# Other valid request size formats
 mcp-openapi-server --max-request-size 1024kb
 mcp-openapi-server --max-request-size 512kb
 ```
@@ -681,7 +696,14 @@ Options:
   --base-url <url>                 Base URL for backend APIs (overrides config file)
   --max-tool-name-length <number>  Maximum length for generated tool names (default: "48")
   --max-request-size <size>        Maximum size for JSON request bodies (default: "2mb")
+  --max-response-size-mb <number>  Maximum size for backend API responses in MB (default: "50")
   --http                           Run in HTTP server mode instead of stdio (default: false)
+  --https                          Enable HTTPS mode (requires certificate files)
+  --https-port <number>            Port for HTTPS server mode (default: "4443")
+  --key-file <path>                Path to private key file for HTTPS
+  --cert-file <path>               Path to certificate file for HTTPS
+  --pfx-file <path>                Path to PFX/PKCS12 file for HTTPS (alternative to key/cert)
+  --passphrase <passphrase>        Passphrase for encrypted private key
   -v, --verbose                    Enable verbose logging (default: true)
   -h, --help                       Display help for command
 ```
@@ -689,14 +711,82 @@ Options:
 **Mode Selection:**
 - **Default (no `--http` flag):** Stdio mode - ideal for IDE integration (Cursor, Claude Desktop)
 - **With `--http` flag:** HTTP mode - ideal for web integration, testing, and standalone deployment
+- **With `--https` flag:** HTTPS mode - secure web integration with TLS encryption
 
-## HTTP Endpoints (HTTP Mode)
+## MCP Streaming HTTP Protocol
 
-When running with `--http`, the server exposes:
+When running with `--http`, the server implements the **MCP Streaming HTTP protocol** with session management:
 
-- `POST /mcp` - MCP JSON-RPC endpoint
-- `GET /health` - Health check and stats
-- `GET /info` - Detailed server information
+### Protocol Features
+- ✅ **Session Management**: Each client gets a unique session ID via `Mcp-Session-Id` header
+- ✅ **JSON-RPC 2.0**: Standard MCP message format over HTTP
+- ✅ **Stateful Connections**: Sessions maintain client context and authentication
+- ✅ **Session Cleanup**: Automatic cleanup of expired sessions (30 minutes)
+- 🚧 **Server-Sent Events**: Placeholder for future streaming implementation
+
+### HTTP Endpoints
+
+The server exposes **exactly 3 endpoints** when running in HTTP/HTTPS mode:
+
+| Method | Endpoint | Purpose | Status |
+|--------|----------|---------|--------|
+| `POST` | `/mcp` | **MCP JSON-RPC endpoint** - All MCP protocol communication | ✅ Active |
+| `GET` | `/mcp` | **SSE streaming placeholder** - Future server-to-client streaming | 🚧 Placeholder |
+| `GET` | `/health` | **Health check** - Server status and session count | ✅ Active |
+| `GET` | `/info` | **Server information** - Specs, tools, resources, prompts | ✅ Active |
+
+**Important Notes**:
+- ✅ All MCP operations (tools, resources, prompts) go through the **single** `POST /mcp` endpoint using JSON-RPC 2.0 messages
+- ❌ **No separate REST endpoints** - The server follows MCP Streaming HTTP protocol specification
+- ✅ Health and info endpoints remain separate for monitoring and DevOps purposes
+
+### MCP Protocol Flow
+
+1. **Initialize Session**: Client sends `initialize` method to `POST /mcp`
+2. **Session Created**: Server responds with `Mcp-Session-Id` header
+3. **Subsequent Requests**: Client includes session ID in all future requests
+4. **Session Validation**: Server validates session for each request
+
+### Endpoint Usage Examples
+
+**MCP Protocol Communication:**
+```bash
+# Initialize session
+curl -X POST http://localhost:4000/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "initialize",
+    "params": {
+      "protocolVersion": "2024-11-05",
+      "clientInfo": {"name": "my-client", "version": "1.0.0"}
+    },
+    "id": 1
+  }'
+# Response includes: Mcp-Session-Id header
+
+# List tools (requires session ID)
+curl -X POST http://localhost:4000/mcp \
+  -H "Content-Type: application/json" \
+  -H "Mcp-Session-Id: your-session-id" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "tools/list",
+    "id": 2
+  }'
+```
+
+**Health Check:**
+```bash
+curl http://localhost:4000/health
+# Returns: {"status": "ok", "sessions": 2, "tools": 5, ...}
+```
+
+**Server Information:**
+```bash
+curl http://localhost:4000/info  
+# Returns: {"specs": [...], "tools": [...], "resources": [...]}
+```
 
 ### Health Check Response
 ```json
@@ -706,9 +796,105 @@ When running with `--http`, the server exposes:
   "tools": 12,
   "resources": 3,
   "prompts": 2,
-  "version": "1.0.0"
+  "sessions": 3,
+  "version": "1.0.0",
+  "protocol": "MCP Streaming HTTP (SSE placeholder)"
 }
 ```
+
+## HTTPS Configuration
+
+The server supports secure HTTPS connections with TLS encryption for production deployments:
+
+### HTTPS Setup Options
+
+**Option 1: Separate Key and Certificate Files**
+```bash
+# Generate or obtain SSL certificate files
+# Then run with separate key and cert files
+mcp-openapi-server --https \
+  --key-file ./certs/private.key \
+  --cert-file ./certs/certificate.crt \
+  --https-port 4443
+```
+
+**Option 2: PFX/PKCS12 File**
+```bash
+# Use a single PFX file (common in Windows environments)
+mcp-openapi-server --https \
+  --pfx-file ./certs/server.pfx \
+  --passphrase mypassword \
+  --https-port 4443
+```
+
+### HTTPS Examples
+
+**Basic HTTPS with Banking Example:**
+```bash
+# HTTPS mode with banking examples
+mcp-openapi-server --https \
+  --key-file ./certs/server.key \
+  --cert-file ./certs/server.crt \
+  --specs ./examples/specs \
+  --config ./examples/mcp-config.json
+```
+
+**HTTPS with Custom Configuration:**
+```bash
+# Production HTTPS setup
+mcp-openapi-server --https \
+  --pfx-file ./production/certs/api-server.pfx \
+  --passphrase $CERT_PASSPHRASE \
+  --https-port 443 \
+  --base-url https://api.production.com \
+  --specs ./production/specs
+```
+
+### HTTPS Output
+When HTTPS is enabled, you'll see:
+```
+🔒 MCP OpenAPI HTTPS Server running on port 4443
+📊 Health check: https://localhost:4443/health
+ℹ️  Server info: https://localhost:4443/info
+📋 Loaded 3 specs, 4 tools, 5 resources, 2 prompts
+```
+
+### Certificate Requirements
+
+**For `--key-file` and `--cert-file`:**
+- Private key file (`.key`, `.pem`)
+- Certificate file (`.crt`, `.cer`, `.pem`)
+- Both files must be readable by the server process
+
+**For `--pfx-file`:**
+- Single PKCS#12 file (`.pfx`, `.p12`) containing both key and certificate
+- Optional passphrase for encrypted PFX files
+
+### HTTPS + MCP Streaming Protocol
+
+HTTPS mode provides:
+- ✅ **Encrypted MCP sessions** - All JSON-RPC 2.0 messages encrypted with TLS
+- ✅ **Secure session management** - `Mcp-Session-Id` headers protected
+- ✅ **TLS certificate validation** - Standard HTTPS security
+- ✅ **Future secure SSE** - Ready for encrypted Server-Sent Events
+- ✅ **Production-ready** - Suitable for production MCP server deployments
+
+### Troubleshooting HTTPS
+
+**Certificate file not found:**
+```
+⚠️  Private key file not found: ./certs/private.key
+```
+- Verify file paths are correct and files exist
+- Check file permissions are readable
+
+**Invalid certificate:**
+```
+⚠️  Error reading HTTPS certificate files: Invalid certificate format
+```
+- Verify certificate files are valid PEM or PFX format
+- Check certificate and key match
+- Ensure passphrase is correct for encrypted files
 
 ## Examples
 
@@ -884,6 +1070,39 @@ The tests validate:
 ## License
 
 MIT License - see [LICENSE](LICENSE) file for details.
+
+## 🚧 Current Limitations
+
+### Large Payload Handling
+- **Memory Limit**: Responses larger than 50MB (configurable via `maxResponseSizeMB`) will be rejected to prevent memory issues
+- **No Streaming**: Server-Sent Events (SSE) streaming is not yet implemented, so large responses must be handled by:
+  - Increasing the `maxResponseSizeMB` limit (not recommended for very large payloads)
+  - Implementing pagination at the backend API level
+  - Waiting for SSE streaming implementation (future enhancement)
+
+**Configuration Options:**
+```bash
+# CLI option
+--max-response-size-mb 100
+
+# Config file option
+{
+  "maxResponseSizeMB": 100
+}
+```
+
+### Single Backend Architecture
+- **Single Base URL**: Only one backend API base URL is supported per server instance
+- **Multi-Backend Workaround**: For multiple backend services, use an API Gateway or reverse proxy to provide a unified endpoint
+- **Recommended Architecture**:
+  ```
+  MCP Client → mcp-openapi → API Gateway → Multiple Backend APIs
+  ```
+
+### MCP Protocol Features
+- **SSE Streaming**: Server-Sent Events endpoint (`GET /mcp`) is a placeholder - not yet implemented
+- **Session Persistence**: Sessions are in-memory only (lost on server restart)
+- **Real-time Updates**: No push notifications or real-time data streaming
 
 ## Support
 

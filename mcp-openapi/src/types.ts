@@ -35,6 +35,7 @@ export interface ServerConfig {
     origin?: string | string[];
     credentials?: boolean;
   };
+  maxResponseSizeMB?: number;
 }
 
 export interface PromptSpec {
@@ -87,6 +88,7 @@ export interface ServerOptions {
   baseUrl?: string;
   maxToolNameLength?: number;
   maxRequestSize?: string;
+  maxResponseSizeMB?: number;
   // HTTPS configuration
   https?: boolean;
   httpsPort?: number;

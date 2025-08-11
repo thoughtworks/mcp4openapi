@@ -64,9 +64,23 @@ describe('MCPClient', () => {
         // Initialize response
         {
           ok: true,
+          headers: {
+            get: (name: string) => name === 'mcp-session-id' ? 'test-session-123' : null
+          },
           json: () => Promise.resolve({
             jsonrpc: '2.0',
-            result: { message: 'MCP server running' },
+            result: { 
+              protocolVersion: '2024-11-05',
+              capabilities: {
+                tools: { listChanged: true },
+                resources: { listChanged: true, subscribe: false },
+                prompts: { listChanged: true }
+              },
+              serverInfo: {
+                name: 'mcp-openapi',
+                version: '1.0.0'
+              }
+            },
             id: 1
           })
         },
@@ -147,7 +161,19 @@ describe('MCPClient', () => {
       // Mock successful connection with tools
       const mockResponses = [
         { ok: true, json: () => Promise.resolve({}) },
-        { ok: true, json: () => Promise.resolve({ jsonrpc: '2.0', result: {}, id: 1 }) },
+        { 
+          ok: true, 
+          headers: { get: (name: string) => name === 'mcp-session-id' ? 'test-session-123' : null },
+          json: () => Promise.resolve({ 
+            jsonrpc: '2.0', 
+            result: { 
+              protocolVersion: '2024-11-05',
+              capabilities: { tools: { listChanged: true }, resources: { listChanged: true, subscribe: false }, prompts: { listChanged: true } },
+              serverInfo: { name: 'mcp-openapi', version: '1.0.0' }
+            }, 
+            id: 1 
+          }) 
+        },
         { ok: true, json: () => Promise.resolve({ 
           jsonrpc: '2.0', 
           result: { 
@@ -188,7 +214,11 @@ describe('MCPClient', () => {
         'http://localhost:4000/mcp',
         expect.objectContaining({
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Mcp-Session-Id': 'test-session-123'
+          },
           body: expect.stringContaining('tools/call')
         })
       );
@@ -208,7 +238,19 @@ describe('MCPClient', () => {
       // Mock successful connection with resources
       const mockResponses = [
         { ok: true, json: () => Promise.resolve({}) },
-        { ok: true, json: () => Promise.resolve({ jsonrpc: '2.0', result: {}, id: 1 }) },
+        { 
+          ok: true, 
+          headers: { get: (name: string) => name === 'mcp-session-id' ? 'test-session-123' : null },
+          json: () => Promise.resolve({ 
+            jsonrpc: '2.0', 
+            result: { 
+              protocolVersion: '2024-11-05',
+              capabilities: { tools: { listChanged: true }, resources: { listChanged: true, subscribe: false }, prompts: { listChanged: true } },
+              serverInfo: { name: 'mcp-openapi', version: '1.0.0' }
+            }, 
+            id: 1 
+          }) 
+        },
         { ok: true, json: () => Promise.resolve({ jsonrpc: '2.0', result: { tools: [] }, id: 2 }) },
         { ok: true, json: () => Promise.resolve({ 
           jsonrpc: '2.0', 
@@ -254,7 +296,11 @@ describe('MCPClient', () => {
         'http://localhost:4000/mcp',
         expect.objectContaining({
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Mcp-Session-Id': 'test-session-123'
+          },
           body: expect.stringContaining('resources/read')
         })
       );
@@ -284,7 +330,19 @@ describe('MCPClient', () => {
       // Mock successful connection with prompts
       const mockResponses = [
         { ok: true, json: () => Promise.resolve({}) },
-        { ok: true, json: () => Promise.resolve({ jsonrpc: '2.0', result: {}, id: 1 }) },
+        { 
+          ok: true, 
+          headers: { get: (name: string) => name === 'mcp-session-id' ? 'test-session-123' : null },
+          json: () => Promise.resolve({ 
+            jsonrpc: '2.0', 
+            result: { 
+              protocolVersion: '2024-11-05',
+              capabilities: { tools: { listChanged: true }, resources: { listChanged: true, subscribe: false }, prompts: { listChanged: true } },
+              serverInfo: { name: 'mcp-openapi', version: '1.0.0' }
+            }, 
+            id: 1 
+          }) 
+        },
         { ok: true, json: () => Promise.resolve({ jsonrpc: '2.0', result: { tools: [] }, id: 2 }) },
         { ok: true, json: () => Promise.resolve({ jsonrpc: '2.0', result: { resources: [] }, id: 3 }) },
         { ok: true, json: () => Promise.resolve({ 
@@ -326,8 +384,12 @@ describe('MCPClient', () => {
         'http://localhost:4000/mcp',
         expect.objectContaining({
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          // Just check that the body contains the expected data, not the exact format
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Mcp-Session-Id': 'test-session-123'
+          },
+          body: expect.stringContaining('prompts/get')
         })
       );
 
@@ -348,7 +410,19 @@ describe('MCPClient', () => {
 
       const mockResponses = [
         { ok: true, json: () => Promise.resolve({}) },
-        { ok: true, json: () => Promise.resolve({ jsonrpc: '2.0', result: {}, id: 1 }) },
+        { 
+          ok: true, 
+          headers: { get: (name: string) => name === 'mcp-session-id' ? 'test-session-123' : null },
+          json: () => Promise.resolve({ 
+            jsonrpc: '2.0', 
+            result: { 
+              protocolVersion: '2024-11-05',
+              capabilities: { tools: { listChanged: true }, resources: { listChanged: true, subscribe: false }, prompts: { listChanged: true } },
+              serverInfo: { name: 'mcp-openapi', version: '1.0.0' }
+            }, 
+            id: 1 
+          }) 
+        },
         { ok: true, json: () => Promise.resolve({ jsonrpc: '2.0', result: { tools: mockCapabilities.tools }, id: 2 }) },
         { ok: true, json: () => Promise.resolve({ jsonrpc: '2.0', result: { resources: mockCapabilities.resources }, id: 3 }) },
         { ok: true, json: () => Promise.resolve({ jsonrpc: '2.0', result: { prompts: mockCapabilities.prompts }, id: 4 }) }

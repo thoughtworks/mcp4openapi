@@ -1,6 +1,7 @@
 import express from 'express';
 import https from 'https';
 import fs from 'fs';
+import { randomUUID } from 'crypto';
 import { MCPTool, MCPResource, PromptSpec, OpenAPISpec, ServerOptions } from './types.js';
 import { Telemetry } from './telemetry.js';
 import { PACKAGE_VERSION } from './package-info.js';
@@ -19,20 +20,100 @@ export interface HttpSetupContext {
   extractUserContext: (request?: any) => { token?: string };
 }
 
+// MCP Session interface for future SSE implementation
+interface MCPSession {
+  sessionId: string;
+  clientInfo: {
+    name: string;
+    version: string;
+  };
+  capabilities: any;
+  createdAt: Date;
+  lastActivity: Date;
+  userContext: { token?: string };
+  // SSE connection will be added here in future
+  // sseConnection?: express.Response;
+}
+
 export class HttpSetup {
   private context: HttpSetupContext;
+  private sessions: Map<string, MCPSession> = new Map();
+  private sessionCleanupInterval: NodeJS.Timeout;
 
   constructor(context: HttpSetupContext) {
     this.context = context;
+    
+    // Clean up expired sessions every 5 minutes
+    this.sessionCleanupInterval = setInterval(() => {
+      this.cleanupExpiredSessions();
+    }, 5 * 60 * 1000);
   }
 
   setupRoutes(): void {
-    this.setupMcpRoute();
+    this.setupMcpStreamingRoute();
     this.setupHealthRoute();
     this.setupInfoRoute();
   }
 
-  private setupMcpRoute(): void {
+  // Clean up expired sessions (older than 30 minutes)
+  private cleanupExpiredSessions(): void {
+    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+    let cleanedCount = 0;
+    
+    for (const [sessionId, session] of this.sessions.entries()) {
+      if (session.lastActivity < thirtyMinutesAgo) {
+        this.sessions.delete(sessionId);
+        cleanedCount++;
+      }
+    }
+    
+    if (cleanedCount > 0) {
+      this.context.telemetry.debug(`🧹 Cleaned up ${cleanedCount} expired MCP sessions`);
+    }
+  }
+
+  // Generate a new session ID
+  private generateSessionId(): string {
+    return randomUUID();
+  }
+
+  // Create a new MCP session
+  private createSession(clientInfo: any, userContext: { token?: string }): MCPSession {
+    const sessionId = this.generateSessionId();
+    const session: MCPSession = {
+      sessionId,
+      clientInfo: clientInfo || { name: 'unknown', version: '1.0.0' },
+      capabilities: {},
+      createdAt: new Date(),
+      lastActivity: new Date(),
+      userContext
+    };
+    
+    this.sessions.set(sessionId, session);
+    this.context.telemetry.debug(`🆕 Created MCP session: ${sessionId}`);
+    return session;
+  }
+
+  // Validate and update session activity
+  private validateSession(sessionId: string): MCPSession | null {
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      return null;
+    }
+    
+    // Update last activity
+    session.lastActivity = new Date();
+    return session;
+  }
+
+  // Extract session ID from request headers
+  private extractSessionId(req: express.Request): string | null {
+    return req.headers['mcp-session-id'] as string || null;
+  }
+
+  // MCP Streaming HTTP Protocol implementation (without SSE for now)
+  private setupMcpStreamingRoute(): void {
+    // Handle POST requests (client-to-server messages)
     this.context.app.post('/mcp', async (req, res) => {
       try {
         // Extract user context from request
@@ -44,18 +125,51 @@ export class HttpSetup {
         this.context.telemetry.debug(`MCP method call: ${method}`);
         
         let result;
+        let session: MCPSession | null = null;
+        
+        // Extract session ID from headers (except for initialize)
+        const sessionId = this.extractSessionId(req);
+        
+        if (method !== 'initialize') {
+          if (!sessionId) {
+            return res.status(400).json({
+              jsonrpc: "2.0",
+              error: { code: -32602, message: "Missing Mcp-Session-Id header. Call initialize first." },
+              id
+            });
+          }
+          
+          session = this.validateSession(sessionId);
+          if (!session) {
+            return res.status(401).json({
+              jsonrpc: "2.0",
+              error: { code: -32603, message: "Invalid or expired session. Please reinitialize." },
+              id
+            });
+          }
+        }
         
         switch (method) {
           case 'initialize':
+            // Create new session for initialize
+            const clientInfo = params?.clientInfo || { name: 'unknown', version: '1.0.0' };
+            session = this.createSession(clientInfo, userContext);
+            
             result = {
-              message: "MCP server running",
-              authMode: userContext.token ? "user-token" : "service-token",
+              protocolVersion: "2024-11-05",
               capabilities: {
                 tools: { listChanged: true },
                 resources: { listChanged: true, subscribe: false },
                 prompts: { listChanged: true }
+              },
+              serverInfo: {
+                name: "mcp-openapi",
+                version: PACKAGE_VERSION
               }
             };
+            
+            // Set session ID in response headers
+            res.setHeader('Mcp-Session-Id', session.sessionId);
             break;
             
           case 'tools/list':
@@ -96,7 +210,7 @@ export class HttpSetup {
             if (!toolName) {
               throw new Error('Tool name is required');
             }
-            result = await this.context.executeTool(toolName, toolArgs, userContext);
+            result = await this.context.executeTool(toolName, toolArgs, session!.userContext);
             break;
             
           case 'resources/read':
@@ -106,7 +220,7 @@ export class HttpSetup {
             }
             const resourceParams = params?.parameters || {};
             
-            result = await this.context.readResource(resourceUri, userContext, resourceParams);
+            result = await this.context.readResource(resourceUri, session!.userContext, resourceParams);
             break;
             
           case 'prompts/get':
@@ -135,6 +249,34 @@ export class HttpSetup {
         });
       }
     });
+
+    // Handle GET requests (for future SSE implementation)
+    this.context.app.get('/mcp', (req, res) => {
+      const sessionId = this.extractSessionId(req);
+      
+      if (!sessionId) {
+        return res.status(400).json({
+          error: "Missing Mcp-Session-Id header"
+        });
+      }
+      
+      const session = this.validateSession(sessionId);
+      if (!session) {
+        return res.status(401).json({
+          error: "Invalid or expired session"
+        });
+      }
+      
+      // TODO: Implement SSE streaming in the future
+      // For now, just return a message indicating SSE is not yet implemented
+      res.json({
+        message: "SSE streaming not yet implemented",
+        sessionId: sessionId,
+        note: "This endpoint will support Server-Sent Events in a future update"
+      });
+      
+      this.context.telemetry.debug(`📡 SSE stream requested for session ${sessionId} (not implemented yet)`);
+    });
   }
 
   private setupHealthRoute(): void {
@@ -145,9 +287,20 @@ export class HttpSetup {
         tools: this.context.tools.length,
         resources: this.context.resources.length,
         prompts: this.context.prompts.size,
-        version: PACKAGE_VERSION
+        sessions: this.sessions.size,
+        version: PACKAGE_VERSION,
+        protocol: 'MCP Streaming HTTP (SSE placeholder)'
       });
     });
+  }
+
+  // Cleanup method to be called when server shuts down
+  cleanup(): void {
+    if (this.sessionCleanupInterval) {
+      clearInterval(this.sessionCleanupInterval);
+    }
+    this.sessions.clear();
+    this.context.telemetry.debug('🧹 HttpSetup cleanup completed');
   }
 
   private setupInfoRoute(): void {

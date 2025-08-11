@@ -6,6 +6,7 @@ export class MCPClient {
   private config: MCPServerConfig | null = null;
   private connected: boolean = false;
   private capabilities: MCPCapabilities | null = null;
+  private sessionId: string | null = null;
 
   async connect(config: MCPServerConfig): Promise<void> {
     this.config = config;
@@ -35,7 +36,7 @@ export class MCPClient {
   }
 
   /**
-   * Load capabilities from the MCP server
+   * Load capabilities from the MCP server using MCP Streaming HTTP protocol
    */
   private async loadCapabilities(): Promise<void> {
     if (!this.connected || !this.config) {
@@ -43,13 +44,14 @@ export class MCPClient {
     }
 
     try {
-      console.log(chalk.cyan(`📋 [MCP Client] Loading capabilities from server...`));
+      console.log(chalk.cyan(`📋 [MCP Client] Initializing MCP session...`));
       
-      // First, initialize the MCP connection
+      // First, initialize the MCP connection with proper protocol
       const initResponse = await fetch(`${this.config.connection.url}/mcp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         body: JSON.stringify({
           jsonrpc: '2.0',
@@ -57,7 +59,9 @@ export class MCPClient {
           method: 'initialize',
           params: {
             protocolVersion: '2024-11-05',
-            capabilities: {},
+            capabilities: {
+              // Client capabilities (none for now)
+            },
             clientInfo: {
               name: 'mcp-test-client',
               version: '1.0.0'
@@ -70,8 +74,15 @@ export class MCPClient {
         throw new Error(`HTTP ${initResponse.status}: ${initResponse.statusText}`);
       }
 
+      // Extract session ID from response headers
+      this.sessionId = initResponse.headers.get('mcp-session-id');
+      if (!this.sessionId) {
+        throw new Error('Server did not provide Mcp-Session-Id header');
+      }
+
       const initData = await initResponse.json() as any;
-      console.log(chalk.gray(`   🔗 [MCP Client] Server initialized: ${initData.result?.message || 'OK'}`));
+      console.log(chalk.gray(`   🔗 [MCP Client] Session initialized: ${this.sessionId.substring(0, 8)}...`));
+      console.log(chalk.gray(`   📡 [MCP Client] Protocol version: ${initData.result?.protocolVersion || 'unknown'}`));
 
       // Now get the actual capabilities by calling the specific list endpoints
       console.log(chalk.cyan(`   📋 [MCP Client] Fetching tools, resources, and prompts...`));
@@ -135,11 +146,23 @@ export class MCPClient {
       throw new Error('MCP client not connected');
     }
 
+    if (!this.sessionId && method !== 'initialize') {
+      throw new Error('No MCP session established. Session ID is required for all requests except initialize.');
+    }
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    };
+
+    // Add session ID header for all requests except initialize
+    if (this.sessionId && method !== 'initialize') {
+      headers['Mcp-Session-Id'] = this.sessionId;
+    }
+
     const response = await fetch(`${this.config.connection.url}/mcp`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({
         jsonrpc: '2.0',
         id: Date.now(),
@@ -158,7 +181,8 @@ export class MCPClient {
   async disconnect(): Promise<void> {
     this.connected = false;
     this.capabilities = null;
-    console.log(chalk.gray(`🔌 [MCP Client] Disconnected`));
+    this.sessionId = null;
+    console.log(chalk.gray(`🔌 [MCP Client] Disconnected and session cleared`));
   }
 
   async executeTool(toolName: string, parameters: Record<string, any>): Promise<any> {

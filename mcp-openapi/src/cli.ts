@@ -20,6 +20,7 @@ program
   .option('--base-url <url>', 'Base URL for backend APIs (overrides config file)')
   .option('--max-tool-name-length <number>', 'Maximum length for generated tool names', '48')
   .option('--max-request-size <size>', 'Maximum size for JSON request bodies', '2mb')
+  .option('--max-response-size-mb <number>', 'Maximum size for backend API responses in MB', '50')
   .option('--http', 'Run in HTTP server mode instead of stdio', false)
   .option('--https', 'Enable HTTPS mode (requires --key-file and --cert-file or --pfx-file)', false)
   .option('--https-port <number>', 'Port for HTTPS server mode', '4443')
@@ -38,6 +39,7 @@ program
       ...(options.baseUrl && { baseUrl: options.baseUrl }),
       ...(options.maxToolNameLength && { maxToolNameLength: parseInt(options.maxToolNameLength) }),
       ...(options.maxRequestSize && { maxRequestSize: options.maxRequestSize }),
+      ...(options.maxResponseSizeMb && { maxResponseSizeMB: parseInt(options.maxResponseSizeMb) }),
       // HTTPS options
       https: options.https,
       ...(options.httpsPort && { httpsPort: parseInt(options.httpsPort) }),

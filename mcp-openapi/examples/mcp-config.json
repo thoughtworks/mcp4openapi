@@ -8,6 +8,7 @@
     "origin": "*",
     "credentials": true
   },
+  "maxResponseSizeMB": 50,
   "overrides": [
     {
       "specId": "banking-payments",

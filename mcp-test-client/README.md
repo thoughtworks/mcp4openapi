@@ -46,7 +46,7 @@ A comprehensive test client for demonstrating Model Context Protocol (MCP) workf
 
 ## Features
 
-- 🔌 **MCP Server Integration**: Connects to MCP servers via HTTP
+- 🔌 **MCP Server Integration**: Connects to MCP servers via MCP Streaming HTTP protocol
 - 🤖 **Mock LLM Simulation**: Simulates AI assistant decision-making
 - 🎬 **Scenario Testing**: Pre-configured banking scenarios (fraud investigation, loan recommendations, etc.)
 - 📊 **Interactive CLI**: Easy-to-use interface for running tests
@@ -88,6 +88,29 @@ npm install
 # Build the project
 npm run build
 ```
+
+## MCP Streaming HTTP Protocol Implementation
+
+The test client implements the MCP Streaming HTTP protocol for communication with MCP servers:
+
+### Protocol Features
+- ✅ **Session Initialization**: Establishes session with `initialize` method
+- ✅ **Session Management**: Maintains `Mcp-Session-Id` for all requests
+- ✅ **JSON-RPC 2.0**: Standard MCP message format
+- ✅ **Error Handling**: Proper handling of session validation errors
+- 🚧 **SSE Support**: Not yet implemented (request-response pattern only)
+
+### Connection Flow
+1. **Health Check**: Verify server availability via `GET /health` endpoint
+2. **Initialize Session**: Send `initialize` request to `POST /mcp` to establish session
+3. **Extract Session ID**: Get `Mcp-Session-Id` from response headers
+4. **Authenticated Requests**: Include session ID in all subsequent requests
+5. **Capability Discovery**: Load tools, resources, and prompts
+
+### Current Limitations
+- **No SSE Streaming**: Uses synchronous request-response pattern
+- **Session-based Only**: All operations require valid session
+- **Single Server**: Currently connects to one MCP server at a time
 
 ## Configuration
 
@@ -283,10 +306,12 @@ Risk Score: 78/100 (HIGH RISK)...
 ## Architecture Details
 
 ### MCP Client (`src/mcp-client.ts`)
-- Connects to MCP servers via HTTP
-- Executes tools and prompts
+- Connects to MCP servers via MCP Streaming HTTP protocol
+- Implements session management with `Mcp-Session-Id` headers
+- Executes tools and prompts with proper MCP protocol flow
 - Handles errors gracefully
 - Simulates responses when servers are unavailable
+- **Note**: SSE streaming support not yet implemented
 
 ### Mock LLM (`src/mock-llm.ts`)
 - Simulates AI assistant behavior

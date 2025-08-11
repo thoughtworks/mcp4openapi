@@ -809,6 +809,23 @@ export class MCPOpenAPIServer {
         };
       }
       
+      // Check response size before loading into memory
+      if (!this.checkResponseSize(response, 'tool', toolName)) {
+        const maxSizeMB = this.config.maxResponseSizeMB || this.options.maxResponseSizeMB || 50;
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              error: "RESPONSE_TOO_LARGE",
+              message: `Response exceeds ${maxSizeMB}MB limit. Streaming required.`,
+              suggestion: "Enable SSE streaming for large responses or increase maxResponseSizeMB limit",
+              tool: toolName,
+              maxSizeMB: maxSizeMB
+            }, null, 2)
+          }]
+        };
+      }
+      
       const result = await response.json();
       
       return {
@@ -988,6 +1005,24 @@ export class MCPOpenAPIServer {
         };
       }
       
+      // Check response size before loading into memory
+      if (!this.checkResponseSize(response, 'resource', uri)) {
+        const maxSizeMB = this.config.maxResponseSizeMB || this.options.maxResponseSizeMB || 50;
+        return {
+          contents: [{
+            uri,
+            mimeType: "application/json",
+            text: JSON.stringify({
+              error: "RESPONSE_TOO_LARGE",
+              message: `Response exceeds ${maxSizeMB}MB limit. Streaming required.`,
+              suggestion: "Enable SSE streaming for large responses or increase maxResponseSizeMB limit",
+              resource: uri,
+              maxSizeMB: maxSizeMB
+            }, null, 2)
+          }]
+        };
+      }
+      
       const result = await response.json();
       
       return {
@@ -1048,6 +1083,25 @@ export class MCPOpenAPIServer {
         }
       }]
     };
+  }
+
+  private checkResponseSize(response: Response, operationType: 'tool' | 'resource', operationName: string): boolean {
+    const contentLength = response.headers.get('content-length');
+    if (!contentLength) {
+      // No content-length header, can't check size
+      return true;
+    }
+
+    const sizeBytes = parseInt(contentLength);
+    const maxSizeMB = this.config.maxResponseSizeMB || this.options.maxResponseSizeMB || 50; // Default 50MB
+    const maxSizeBytes = maxSizeMB * 1024 * 1024;
+
+    if (sizeBytes > maxSizeBytes) {
+      this.telemetry.warn(`⚠️  Response size limit exceeded: ${(sizeBytes / 1024 / 1024).toFixed(2)}MB > ${maxSizeMB}MB for ${operationType} ${operationName}`);
+      return false;
+    }
+
+    return true;
   }
 
   private getAuthHeaders(userContext?: { token?: string }): Record<string, string> {
