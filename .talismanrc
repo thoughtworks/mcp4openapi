@@ -86,3 +86,8 @@ fileignoreconfig:
 - filename: mcp-test-client/package-lock.json
   checksum: a3af791e81a56f79dce105b8d9da30d52083f619442c17bb09dd825ee621086a
 version: "1.0"
+
+fileignoreconfig:
+- filename: README.md
+  checksum: 32daef507fe8b06a0a58743ca1a5102760cec41aef38eab43c4c737788614265
+version: "1.0"
