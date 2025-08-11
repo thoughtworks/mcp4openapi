@@ -21,6 +21,13 @@ program
   .option('--max-tool-name-length <number>', 'Maximum length for generated tool names', '48')
   .option('--max-request-size <size>', 'Maximum size for JSON request bodies', '2mb')
   .option('--max-response-size-mb <number>', 'Maximum size for backend API responses in MB', '50')
+  .option('--https-client-ca <path>', 'Path to CA certificate file for HTTPS backend APIs')
+  .option('--https-client-cert <path>', 'Path to client certificate file for HTTPS backend APIs')
+  .option('--https-client-key <path>', 'Path to client private key file for HTTPS backend APIs')
+  .option('--https-client-pfx <path>', 'Path to client PFX/PKCS12 file for HTTPS backend APIs')
+  .option('--https-client-passphrase <passphrase>', 'Passphrase for client private key')
+  .option('--https-client-reject-unauthorized', 'Reject self-signed certificates (default: true)', true)
+  .option('--https-client-timeout <ms>', 'HTTPS request timeout in milliseconds', '30000')
   .option('--http', 'Run in HTTP server mode instead of stdio', false)
   .option('--https', 'Enable HTTPS mode (requires --key-file and --cert-file or --pfx-file)', false)
   .option('--https-port <number>', 'Port for HTTPS server mode', '4443')
@@ -40,7 +47,17 @@ program
       ...(options.maxToolNameLength && { maxToolNameLength: parseInt(options.maxToolNameLength) }),
       ...(options.maxRequestSize && { maxRequestSize: options.maxRequestSize }),
       ...(options.maxResponseSizeMb && { maxResponseSizeMB: parseInt(options.maxResponseSizeMb) }),
-      // HTTPS options
+      // HTTPS Client options
+      ...(options.httpsClientCa && { httpsClientCa: options.httpsClientCa }),
+      ...(options.httpsClientCert && { httpsClientCert: options.httpsClientCert }),
+      ...(options.httpsClientKey && { httpsClientKey: options.httpsClientKey }),
+      ...(options.httpsClientPfx && { httpsClientPfx: options.httpsClientPfx }),
+      ...(options.httpsClientPassphrase && { httpsClientPassphrase: options.httpsClientPassphrase }),
+      ...(options.httpsClientRejectUnauthorized !== undefined && { 
+        httpsClientRejectUnauthorized: options.httpsClientRejectUnauthorized 
+      }),
+      ...(options.httpsClientTimeout && { httpsClientTimeout: parseInt(options.httpsClientTimeout) }),
+      // HTTPS Server options
       https: options.https,
       ...(options.httpsPort && { httpsPort: parseInt(options.httpsPort) }),
       ...(options.keyFile && { keyFile: options.keyFile }),

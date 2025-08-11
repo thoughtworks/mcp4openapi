@@ -9,6 +9,11 @@
     "credentials": true
   },
   "maxResponseSizeMB": 50,
+  "httpsClient": {
+    "rejectUnauthorized": true,
+    "timeout": 30000,
+    "keepAlive": true
+  },
   "overrides": [
     {
       "specId": "banking-payments",

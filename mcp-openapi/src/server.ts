@@ -23,7 +23,9 @@ import {
   ServerOptions
 } from './types.js';
 import { Telemetry, TelemetryContext } from './telemetry.js';
-import { HttpSetup } from './httpSetup.js';
+import { HttpSetup } from './http-setup.js';
+import { ServerConfigManager } from './server-config.js';
+import { HttpsClientManager } from './https-client.js';
 import { PACKAGE_NAME, PACKAGE_VERSION } from './package-info.js';
 
 export class MCPOpenAPIServer {
@@ -31,13 +33,16 @@ export class MCPOpenAPIServer {
   private app: express.Application;
   private specs: Map<string, OpenAPISpec> = new Map();
   private specFiles: Map<string, string> = new Map(); // Map specId to original filename
-  private config: ServerConfig = { overrides: [] };
   private prompts: Map<string, PromptSpec> = new Map();
   private tools: MCPTool[] = [];
   private resources: MCPResource[] = [];
   private options: ServerOptions;
   private isStdioMode = false; // Track if running in stdio mode
   private telemetry: Telemetry;
+  
+  // NEW: Configuration managers
+  private configManager: ServerConfigManager;
+  private httpsClient!: HttpsClientManager;
 
   private updateTelemetryContext(): void {
     // Update telemetry context when server properties change
@@ -47,7 +52,7 @@ export class MCPOpenAPIServer {
       server: this.server,
       specs: this.specs,
       specFiles: this.specFiles,
-      config: this.config,
+      config: this.configManager ? this.configManager.getValidatedConfig() : { overrides: [], resolvedBaseUrl: 'http://localhost:3001' },
       prompts: this.prompts,
       tools: this.tools,
       resources: this.resources
@@ -83,59 +88,59 @@ export class MCPOpenAPIServer {
         } 
       }
     );
-    
-    this.app = express();
-    this.setupExpress();
 
-    // Initialize telemetry with context
+    // Initialize minimal telemetry first
     this.telemetry = new Telemetry({
       options: this.options,
       isStdioMode: this.isStdioMode,
       server: this.server,
       specs: this.specs,
       specFiles: this.specFiles,
-      config: this.config,
+      config: { overrides: [] } as any,
       prompts: this.prompts,
       tools: this.tools,
       resources: this.resources
     });
+
+    // Initialize configuration manager
+    this.configManager = new ServerConfigManager(this.options, this.telemetry);
+    
+    this.app = express();
+    this.setupExpress();
   }
 
   private setupExpress() {
-    const corsOptions = this.config.cors || {};
-    this.app.use(cors(corsOptions));
+    // Note: CORS options will be available after config manager initialization
     this.app.use(express.json({ limit: this.options.maxRequestSize }));
+  }
+
+  private setupCors() {
+    const corsOptions = this.configManager.getCorsConfig();
+    this.app.use(cors(corsOptions));
   }
 
   async initialize(): Promise<void> {
     this.telemetry.debug('🚀 Initializing MCP OpenAPI Server...');
 
-    await this.loadConfig();
+    // Initialize configuration manager
+    await this.configManager.initialize();
+    
+    // Initialize HTTPS client with validated config
+    const httpsConfig = this.configManager.getValidatedConfig().httpsClient;
+    this.httpsClient = new HttpsClientManager(httpsConfig || {}, this.telemetry);
+    this.httpsClient.initialize();
+
+    // Setup CORS now that config is loaded
+    this.setupCors();
+
     await this.loadOpenAPISpecs();
     await this.loadPrompts();
     await this.generateMCPItems();
 
-    // Log which base URL is being used
-    const baseUrl = this.options.baseUrl || this.config.baseUrl || 'http://localhost:3001';
-    const source = this.options.baseUrl ? 'CLI --base-url' : 
-                   this.config.baseUrl ? 'config file' : 'default';
-    this.telemetry.debug(`🌐 Using base URL: ${baseUrl} (from ${source})`);
-
     this.telemetry.debug(`✅ Loaded ${this.specs.size} specs, ${this.tools.length} tools, ${this.resources.length} resources, ${this.prompts.size} prompts`);
   }
 
-  private async loadConfig(): Promise<void> {
-    try {
-      if (fs.existsSync(this.options.configFile!)) {
-        const configContent = fs.readFileSync(this.options.configFile!, 'utf8');
-        this.config = { ...this.config, ...JSON.parse(configContent) };
-        
-        this.telemetry.debug(`📄 Loaded config from ${this.options.configFile}`);
-      }
-    } catch (error) {
-      this.telemetry.warn(`⚠️  Could not load config file: ${(error as Error).message}`);
-    }
-  }
+
 
   private async loadOpenAPISpecs(): Promise<void> {
     if (!fs.existsSync(this.options.specsDir!)) {
@@ -246,7 +251,7 @@ export class MCPOpenAPIServer {
         totalTools: this.tools.length,
         totalResources: this.resources.length - 1, // Exclude the server info resource itself
         totalPrompts: this.prompts.size,
-        overriddenItems: this.config.overrides.length
+        overriddenItems: this.configManager.getValidatedConfig().overrides.length
       },
       specs: [] as any[],
       prompts: Array.from(this.prompts.entries()).map(([name, spec]) => ({
@@ -318,7 +323,8 @@ export class MCPOpenAPIServer {
   }
 
   private getToolName(specId: string, pathPattern: string, method: string, operation: any): string {
-    const override = this.config.overrides.find(o => 
+    const config = this.configManager.getValidatedConfig();
+    const override = config.overrides.find(o => 
       o.specId === specId && o.path === pathPattern && o.method.toLowerCase() === method.toLowerCase()
     );
     
@@ -403,7 +409,8 @@ export class MCPOpenAPIServer {
 
 
   private hasOverride(specId: string, path: string, method: string): boolean {
-    return this.config.overrides.some(o => 
+    const config = this.configManager.getValidatedConfig();
+    return config.overrides.some(o => 
       o.specId === specId && 
       o.path === path && 
       o.method.toLowerCase() === method.toLowerCase()
@@ -420,7 +427,8 @@ export class MCPOpenAPIServer {
 
   private determineMCPType(specId: string, path: string, method: string, operation: any): 'tool' | 'resource' {
     // Check config overrides first
-    const override = this.config.overrides.find(o => 
+    const config = this.configManager.getValidatedConfig();
+    const override = config.overrides.find(o => 
       o.specId === specId && 
       o.path === path && 
       o.method.toLowerCase() === method.toLowerCase()
@@ -463,7 +471,8 @@ export class MCPOpenAPIServer {
   }
 
   private createTool(specId: string, pathPattern: string, method: string, operation: any): MCPTool {
-    const override = this.config.overrides.find(o => 
+    const config = this.configManager.getValidatedConfig();
+    const override = config.overrides.find((o: any) => 
       o.specId === specId && o.path === pathPattern && o.method.toLowerCase() === method.toLowerCase()
     );
     
@@ -489,7 +498,8 @@ export class MCPOpenAPIServer {
   }
 
   private createResource(specId: string, pathPattern: string, method: string, operation: any): MCPResource {
-    const override = this.config.overrides.find(o => 
+    const config = this.configManager.getValidatedConfig();
+    const override = config.overrides.find((o: any) => 
       o.specId === specId && o.path === pathPattern && o.method.toLowerCase() === method.toLowerCase()
     );
     
@@ -669,7 +679,8 @@ export class MCPOpenAPIServer {
     }
 
     // First check if this tool has an override configuration
-    const toolOverride = this.config.overrides.find(o => o.toolName === toolName);
+    const config = this.configManager.getValidatedConfig();
+    const toolOverride = config.overrides.find(o => o.toolName === toolName);
     let pathPattern: string;
     let method: string;
     let specId: string;
@@ -692,8 +703,8 @@ export class MCPOpenAPIServer {
       throw new Error(`Spec ${specId} not found`);
     }
 
-    // CLI baseUrl takes precedence over config file baseUrl
-    const baseUrl = this.options.baseUrl || this.config.baseUrl || 'http://localhost:3001';
+    // Get base URL from config manager
+    const baseUrl = this.configManager.getBaseUrl();
     let actualPath = pathPattern;
     
     // Replace path parameters
@@ -722,9 +733,12 @@ export class MCPOpenAPIServer {
       method: method.toUpperCase(),
       headers: {
         'Content-Type': 'application/json',
-        ...this.getAuthHeaders(userContext)
+        ...this.configManager.buildAuthHeaders(userContext)
       }
     };
+
+    // Apply HTTPS client configuration
+    this.httpsClient.applyToFetchOptions(url, fetchOptions);
 
     if (['post', 'put', 'patch'].includes(method.toLowerCase())) {
       const bodyArgs = { ...args };
@@ -811,7 +825,7 @@ export class MCPOpenAPIServer {
       
       // Check response size before loading into memory
       if (!this.checkResponseSize(response, 'tool', toolName)) {
-        const maxSizeMB = this.config.maxResponseSizeMB || this.options.maxResponseSizeMB || 50;
+        const maxSizeMB = this.configManager.getMaxResponseSizeMB();
         return {
           content: [{
             type: "text",
@@ -889,8 +903,8 @@ export class MCPOpenAPIServer {
     // We need to convert this back to the actual API path as defined in the OpenAPI spec
     let pathPattern = '/' + pathAfterProtocol;
     
-    // CLI baseUrl takes precedence over config file baseUrl
-    const baseUrl = this.options.baseUrl || this.config.baseUrl || 'http://localhost:3001';
+    // Get base URL from config manager
+    const baseUrl = this.configManager.getBaseUrl();
     
     // Separate path parameters from query parameters based on resource schema
     const queryParams = new URLSearchParams();
@@ -931,9 +945,14 @@ export class MCPOpenAPIServer {
     }
     
     try {
-      const response = await fetch(url, {
-        headers: this.getAuthHeaders(userContext)
-      });
+      const fetchOptions: RequestInit = {
+        headers: this.configManager.buildAuthHeaders(userContext)
+      };
+
+      // Apply HTTPS client configuration
+      this.httpsClient.applyToFetchOptions(url, fetchOptions);
+
+      const response = await fetch(url, fetchOptions);
       
       if (!response.ok) {
         // Log security events for monitoring
@@ -1007,7 +1026,7 @@ export class MCPOpenAPIServer {
       
       // Check response size before loading into memory
       if (!this.checkResponseSize(response, 'resource', uri)) {
-        const maxSizeMB = this.config.maxResponseSizeMB || this.options.maxResponseSizeMB || 50;
+        const maxSizeMB = this.configManager.getMaxResponseSizeMB();
         return {
           contents: [{
             uri,
@@ -1093,7 +1112,7 @@ export class MCPOpenAPIServer {
     }
 
     const sizeBytes = parseInt(contentLength);
-    const maxSizeMB = this.config.maxResponseSizeMB || this.options.maxResponseSizeMB || 50; // Default 50MB
+    const maxSizeMB = this.configManager.getMaxResponseSizeMB();
     const maxSizeBytes = maxSizeMB * 1024 * 1024;
 
     if (sizeBytes > maxSizeBytes) {
@@ -1104,60 +1123,10 @@ export class MCPOpenAPIServer {
     return true;
   }
 
-  private getAuthHeaders(userContext?: { token?: string }): Record<string, string> {
-    const headers: Record<string, string> = {};
-    
-    // Priority 1: Use user's token if provided (token passthrough)
-    if (userContext?.token) {
-      headers['Authorization'] = `Bearer ${userContext.token}`;
-      return headers;
-    }
-    
-    // Priority 2: Fall back to service token from config
-    if (this.config.authentication) {
-      const auth = this.config.authentication;
-      const token = process.env[auth.envVar || 'API_TOKEN'];
-      
-      if (token) {
-        switch (auth.type) {
-          case 'bearer':
-            headers['Authorization'] = `Bearer ${token}`;
-            break;
-          case 'apikey':
-            headers[auth.headerName || 'X-API-Key'] = token;
-            break;
-          case 'basic':
-            headers['Authorization'] = `Basic ${Buffer.from(token).toString('base64')}`;
-            break;
-        }
-      }
-    }
-    
-    return headers;
-  }
+
 
   private extractUserContext(request?: any): { token?: string } {
-    // Method 1: Check for user token in environment (for stdio mode)
-    const userToken = process.env.USER_API_TOKEN || process.env.MCP_USER_TOKEN;
-    if (userToken) {
-      return { token: userToken };
-    }
-    
-    // Method 2: Extract from request headers (for HTTP mode)
-    if (request?.headers?.authorization) {
-      const authHeader = request.headers.authorization;
-      if (authHeader.startsWith('Bearer ')) {
-        return { token: authHeader.substring(7) };
-      }
-    }
-    
-    // Method 3: Check for token in request metadata (future MCP enhancement)
-    if (request?.meta?.userToken) {
-      return { token: request.meta.userToken };
-    }
-    
-    // No user token found
-    return {};
+    return this.configManager.extractUserContext(request);
   }
 
   // For IDE usage (stdio)

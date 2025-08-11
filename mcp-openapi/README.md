@@ -697,6 +697,13 @@ Options:
   --max-tool-name-length <number>  Maximum length for generated tool names (default: "48")
   --max-request-size <size>        Maximum size for JSON request bodies (default: "2mb")
   --max-response-size-mb <number>  Maximum size for backend API responses in MB (default: "50")
+  --https-client-ca <path>         Path to CA certificate file for HTTPS backend APIs
+  --https-client-cert <path>       Path to client certificate file for HTTPS backend APIs  
+  --https-client-key <path>        Path to client private key file for HTTPS backend APIs
+  --https-client-pfx <path>        Path to client PFX/PKCS12 file for HTTPS backend APIs
+  --https-client-passphrase <pass> Passphrase for client private key
+  --https-client-reject-unauthorized  Reject self-signed certificates (default: true)
+  --https-client-timeout <ms>      HTTPS request timeout in milliseconds (default: "30000")
   --http                           Run in HTTP server mode instead of stdio (default: false)
   --https                          Enable HTTPS mode (requires certificate files)
   --https-port <number>            Port for HTTPS server mode (default: "4443")
@@ -802,56 +809,56 @@ curl http://localhost:4000/info
 }
 ```
 
-## HTTPS Configuration
+## 🔒 MCP Server HTTPS Configuration
 
-The server supports secure HTTPS connections with TLS encryption for production deployments:
+Configure the MCP OpenAPI server to serve MCP clients over secure HTTPS connections with TLS encryption:
 
-### HTTPS Setup Options
+### MCP Server HTTPS Setup Options
 
 **Option 1: Separate Key and Certificate Files**
 ```bash
-# Generate or obtain SSL certificate files
-# Then run with separate key and cert files
+# Generate or obtain SSL certificate files for the MCP server
 mcp-openapi-server --https \
-  --key-file ./certs/private.key \
-  --cert-file ./certs/certificate.crt \
+  --key-file ./certs/mcp-server.key \
+  --cert-file ./certs/mcp-server.crt \
   --https-port 4443
 ```
 
 **Option 2: PFX/PKCS12 File**
 ```bash
-# Use a single PFX file (common in Windows environments)
+# Use a single PFX file for the MCP server (common in Windows environments)
 mcp-openapi-server --https \
-  --pfx-file ./certs/server.pfx \
+  --pfx-file ./certs/mcp-server.pfx \
   --passphrase mypassword \
   --https-port 4443
 ```
 
-### HTTPS Examples
+### MCP Server HTTPS Examples
 
-**Basic HTTPS with Banking Example:**
+**Development HTTPS Setup:**
 ```bash
-# HTTPS mode with banking examples
+# Development HTTPS mode for secure MCP client connections
 mcp-openapi-server --https \
-  --key-file ./certs/server.key \
-  --cert-file ./certs/server.crt \
-  --specs ./examples/specs \
-  --config ./examples/mcp-config.json
+  --key-file ./certs/dev-server.key \
+  --cert-file ./certs/dev-server.crt \
+  --https-port 4443 \
+  --specs ./specs \
+  --config ./mcp-config.json
 ```
 
-**HTTPS with Custom Configuration:**
+**Production HTTPS Setup:**
 ```bash
-# Production HTTPS setup
+# Production HTTPS setup for serving MCP clients securely
 mcp-openapi-server --https \
-  --pfx-file ./production/certs/api-server.pfx \
-  --passphrase $CERT_PASSPHRASE \
+  --pfx-file ./production/certs/mcp-server.pfx \
+  --passphrase $MCP_SERVER_CERT_PASSPHRASE \
   --https-port 443 \
-  --base-url https://api.production.com \
-  --specs ./production/specs
+  --specs ./production/specs \
+  --config ./production/mcp-config.json
 ```
 
-### HTTPS Output
-When HTTPS is enabled, you'll see:
+### MCP Server HTTPS Output
+When MCP server HTTPS is enabled, you'll see:
 ```
 🔒 MCP OpenAPI HTTPS Server running on port 4443
 📊 Health check: https://localhost:4443/health
@@ -859,27 +866,29 @@ When HTTPS is enabled, you'll see:
 📋 Loaded 3 specs, 4 tools, 5 resources, 2 prompts
 ```
 
-### Certificate Requirements
+### MCP Server Certificate Requirements
 
-**For `--key-file` and `--cert-file`:**
-- Private key file (`.key`, `.pem`)
-- Certificate file (`.crt`, `.cer`, `.pem`)
-- Both files must be readable by the server process
+**For MCP Server `--key-file` and `--cert-file`:**
+- Private key file (`.key`, `.pem`) for the MCP server
+- Certificate file (`.crt`, `.cer`, `.pem`) for the MCP server
+- Both files must be readable by the MCP server process
+- Certificate must be valid for the domain/IP where MCP clients will connect
 
-**For `--pfx-file`:**
-- Single PKCS#12 file (`.pfx`, `.p12`) containing both key and certificate
+**For MCP Server `--pfx-file`:**
+- Single PKCS#12 file (`.pfx`, `.p12`) containing both key and certificate for the MCP server
 - Optional passphrase for encrypted PFX files
+- Certificate must be valid for the domain/IP where MCP clients will connect
 
-### HTTPS + MCP Streaming Protocol
+### MCP Server HTTPS + MCP Streaming Protocol
 
-HTTPS mode provides:
-- ✅ **Encrypted MCP sessions** - All JSON-RPC 2.0 messages encrypted with TLS
-- ✅ **Secure session management** - `Mcp-Session-Id` headers protected
-- ✅ **TLS certificate validation** - Standard HTTPS security
-- ✅ **Future secure SSE** - Ready for encrypted Server-Sent Events
-- ✅ **Production-ready** - Suitable for production MCP server deployments
+MCP Server HTTPS mode provides:
+- ✅ **Encrypted MCP client connections** - All JSON-RPC 2.0 messages from clients encrypted with TLS
+- ✅ **Secure session management** - `Mcp-Session-Id` headers protected in transit
+- ✅ **TLS certificate validation** - Standard HTTPS security for MCP clients
+- ✅ **Future secure SSE** - Ready for encrypted Server-Sent Events to clients
+- ✅ **Production-ready** - Suitable for production MCP server deployments serving multiple clients
 
-### Troubleshooting HTTPS
+### Troubleshooting MCP Server HTTPS
 
 **Certificate file not found:**
 ```
@@ -1070,6 +1079,105 @@ The tests validate:
 ## License
 
 MIT License - see [LICENSE](LICENSE) file for details.
+
+## 🔗 Backend API HTTPS Client Configuration
+
+Configure the MCP OpenAPI server to connect securely to backend APIs over HTTPS with custom certificates and validation options.
+
+### Backend API HTTPS Configuration Options
+
+Add `httpsClient` configuration to your `mcp-config.json` for secure backend API connections:
+
+```json
+{
+  "baseUrl": "https://secure-backend-api.example.com",
+  "httpsClient": {
+    "rejectUnauthorized": true,
+    "timeout": 30000,
+    "keepAlive": true,
+    "certFile": "./certs/backend-client.crt",
+    "keyFile": "./certs/backend-client.key",
+    "caFile": "./certs/backend-ca.crt",
+    "passphrase": "optional-key-passphrase"
+  }
+}
+```
+
+### Backend API HTTPS CLI Options
+
+```bash
+# Basic backend API HTTPS client options
+mcp-openapi-server --base-url https://secure-backend-api.com \
+  --https-client-reject-unauthorized \
+  --https-client-timeout 30000
+
+# Backend API client certificate authentication
+mcp-openapi-server --base-url https://secure-backend-api.com \
+  --https-client-cert ./certs/backend-client.crt \
+  --https-client-key ./certs/backend-client.key
+
+# Custom CA certificate for backend API
+mcp-openapi-server --base-url https://secure-backend-api.com \
+  --https-client-ca ./certs/backend-ca.crt
+
+# PFX/PKCS12 certificate for backend API
+mcp-openapi-server --base-url https://secure-backend-api.com \
+  --https-client-pfx ./certs/backend-client.p12 \
+  --https-client-passphrase mypassword
+```
+
+### Backend API HTTPS Configuration Reference
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `rejectUnauthorized` | boolean | `true` | Reject self-signed certificates from backend APIs |
+| `timeout` | number | `30000` | Request timeout for backend API calls in milliseconds |
+| `keepAlive` | boolean | `true` | Use HTTP keep-alive for backend API connections |
+| `certFile` | string | - | Path to client certificate file for backend API authentication |
+| `keyFile` | string | - | Path to client private key file for backend API authentication |
+| `pfxFile` | string | - | Path to PFX/PKCS12 file for backend API authentication (alternative to cert/key) |
+| `caFile` | string | - | Path to custom CA certificate for backend API validation |
+| `passphrase` | string | - | Passphrase for encrypted private key used with backend APIs |
+
+### Backend API Certificate Types Supported
+
+1. **Separate Certificate and Key Files for Backend API**
+   ```json
+   {
+     "certFile": "./certs/backend-client.crt",
+     "keyFile": "./certs/backend-client.key"
+   }
+   ```
+
+2. **PFX/PKCS12 Bundle for Backend API**
+   ```json
+   {
+     "pfxFile": "./certs/backend-client.p12",
+     "passphrase": "optional"
+   }
+   ```
+
+3. **Custom CA Certificate for Backend API**
+   ```json
+   {
+     "caFile": "./certs/backend-ca.crt"
+   }
+   ```
+
+### Backend API HTTPS Validation Rules
+
+- If `certFile` is provided for backend API authentication, `keyFile` is required
+- If `keyFile` is provided for backend API authentication, `certFile` is required  
+- Cannot specify both `cert/key` files and `pfxFile` simultaneously for backend API authentication
+- Encrypted certificate files require `passphrase` for backend API connections
+- All certificate files must exist and be readable by the MCP server
+- Timeout must be between 1000ms and 300000ms for backend API requests
+
+### Backend API HTTPS Default Behavior
+
+- **No HTTPS config**: Uses standard HTTP client with default Node.js settings for backend API connections
+- **Partial config**: Validates configuration and fails startup if incomplete backend API HTTPS configuration
+- **Complete config**: Enables HTTPS client with custom certificates and settings for secure backend API connections
 
 ## 🚧 Current Limitations
 

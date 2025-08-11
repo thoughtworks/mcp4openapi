@@ -27,6 +27,32 @@ export interface AuthConfig {
   envVar?: string;
 }
 
+export interface HttpsClientConfig {
+  rejectUnauthorized?: boolean;
+  timeout?: number;
+  keepAlive?: boolean;
+  certFile?: string;
+  keyFile?: string;
+  pfxFile?: string;
+  caFile?: string;
+  passphrase?: string;
+}
+
+export interface ValidatedHttpsClientConfig extends HttpsClientConfig {
+  timeout: number;
+  rejectUnauthorized: boolean;
+  keepAlive: boolean;
+  certificateType: 'none' | 'cert-key' | 'pfx';
+}
+
+export interface CertificateData {
+  ca?: Buffer;
+  cert?: Buffer;
+  key?: Buffer;
+  pfx?: Buffer;
+  passphrase?: string;
+}
+
 export interface ServerConfig {
   overrides: ConfigOverride[];
   baseUrl?: string;
@@ -36,6 +62,12 @@ export interface ServerConfig {
     credentials?: boolean;
   };
   maxResponseSizeMB?: number;
+  httpsClient?: HttpsClientConfig;
+}
+
+export interface ValidatedServerConfig extends ServerConfig {
+  resolvedBaseUrl: string;
+  httpsClient?: ValidatedHttpsClientConfig;
 }
 
 export interface PromptSpec {
@@ -89,7 +121,15 @@ export interface ServerOptions {
   maxToolNameLength?: number;
   maxRequestSize?: string;
   maxResponseSizeMB?: number;
-  // HTTPS configuration
+  // HTTPS Client configuration (for backend API connections)
+  httpsClientCa?: string;
+  httpsClientCert?: string;
+  httpsClientKey?: string;
+  httpsClientPfx?: string;
+  httpsClientPassphrase?: string;
+  httpsClientRejectUnauthorized?: boolean;
+  httpsClientTimeout?: number;
+  // HTTPS Server configuration (for MCP server itself)
   https?: boolean;
   httpsPort?: number;
   keyFile?: string;
