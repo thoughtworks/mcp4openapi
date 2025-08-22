@@ -360,17 +360,17 @@ describe('MCPClient', () => {
     });
 
     it('should execute prompt successfully', async () => {
-      const mockResult = 'Prompt executed successfully';
+      const mockPromptTemplate = {
+        messages: [
+          { content: { text: 'Prompt executed successfully' } }
+        ]
+      };
       
       mockFetch.mockResolvedValue({
         ok: true,
         json: () => Promise.resolve({
           jsonrpc: '2.0',
-          result: {
-            messages: [
-              { content: { text: mockResult } }
-            ]
-          },
+          result: mockPromptTemplate,
           id: 1
         })
       } as any);
@@ -396,7 +396,8 @@ describe('MCPClient', () => {
       // Verify the API was called - detailed body validation skipped due to TypeScript complexity
       expect(mockFetch).toHaveBeenCalledTimes(1);
 
-      expect(result).toBe(mockResult);
+      // Now expects the full prompt template structure, not just the text
+      expect(result).toEqual(mockPromptTemplate);
     });
   });
 
