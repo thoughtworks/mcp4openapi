@@ -1,6 +1,6 @@
 {
   "name": "fraud_analysis",
-  "description": "Analyze transaction for fraud indicators using banking industry best practices",
+  "description": "Analyze or Investigate transaction for fraud indicators using banking industry best practices",
   "arguments": [
     {
       "name": "transaction",
@@ -18,5 +18,5 @@
       "required": false
     }
   ],
-  "template": "You are a banking fraud detection expert. Analyze this transaction using industry-standard methodology:\n\nTRANSACTION DETAILS:\n{{transaction}}\n\nACCOUNT HISTORY:\n{{account_history}}\n\n{{#payee_info}}PAYEE INFORMATION:\n{{payee_info}}\n{{/payee_info}}\n\nFOLLOW THIS ANALYSIS FRAMEWORK:\n\nSTEP 1: TRANSACTION PATTERN ANALYSIS\n- Compare amount against historical spending patterns\n- Analyze timing vs normal account activity\n- Check location/device consistency\n\nSTEP 2: PAYEE RISK ASSESSMENT\n- Evaluate payee legitimacy and history\n- Check for first-time payee flags\n- Review payee risk indicators\n\nSTEP 3: BEHAVIORAL ANALYSIS\n- Assess deviation from normal patterns\n- Check for velocity flags (multiple transactions)\n- Review recent security events\n\nSTEP 4: REGULATORY COMPLIANCE\n- AML threshold checks ($10,000+ reporting)\n- Cross-border transaction flags\n- Sanctions list verification\n\nSTEP 5: RISK SCORING & RECOMMENDATION\n\nProvide output in this JSON format:\n{\n  \"risk_score\": <0-100>,\n  \"risk_level\": \"LOW|MEDIUM|HIGH|CRITICAL\",\n  \"primary_risk_factors\": [...],\n  \"recommendation\": \"APPROVE|REVIEW|BLOCK\",\n  \"reasoning\": \"Detailed explanation\",\n  \"regulatory_flags\": [...],\n  \"monitoring_recommendations\": [...]\n}"
+  "template": "You are a banking fraud detection expert. Analyze or investigate this transaction using industry-standard methodology:\n\nTRANSACTION DETAILS:\n{{transaction}}\n\nACCOUNT HISTORY:\n{{account_history}}\n\n{{#payee_info}}PAYEE INFORMATION:\n{{payee_info}}\n{{/payee_info}}\n\nFOLLOW THIS ANALYSIS FRAMEWORK:\n\nSTEP 1: TRANSACTION PATTERN ANALYSIS\n- Compare amount against historical spending patterns\n- Analyze timing vs normal account activity\n- Check location/device consistency\n\nSTEP 2: PAYEE RISK ASSESSMENT\n- Evaluate payee legitimacy and history\n- Check for first-time payee flags\n- Review payee risk indicators\n\nSTEP 3: BEHAVIORAL ANALYSIS\n- Assess deviation from normal patterns\n- Check for velocity flags (multiple transactions)\n- Review recent security events\n\nSTEP 4: REGULATORY COMPLIANCE\n- AML threshold checks ($10,000+ reporting)\n- Cross-border transaction flags\n- Sanctions list verification\n\nSTEP 5: RISK SCORING & RECOMMENDATION\n\nProvide output in this JSON format:\n{\n  \"risk_score\": <0-100>,\n  \"risk_level\": \"LOW|MEDIUM|HIGH|CRITICAL\",\n  \"primary_risk_factors\": [...],\n  \"recommendation\": \"APPROVE|REVIEW|BLOCK\",\n  \"reasoning\": \"Detailed explanation\",\n  \"regulatory_flags\": [...],\n  \"monitoring_recommendations\": [...]\n}"
 } 
