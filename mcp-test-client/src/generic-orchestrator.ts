@@ -176,7 +176,22 @@ export class GenericOrchestrator {
             result = await this.primaryClient!.readResource(request.uri!, request.parameters || {});
             break;
           case 'prompt':
-            result = await this.primaryClient!.executePrompt(request.name!, request.parameters || {});
+            // Get the prompt template from MCP server
+            const promptTemplate = await this.primaryClient!.executePrompt(request.name!, request.parameters || {});
+            
+            if (this.config.enableLogging) {
+              console.log(chalk.cyan(`   📝 [Orchestrator] Got prompt template, sending to LLM for processing...`));
+            }
+            
+            // Send the prompt template to LLM for actual analysis
+            const promptContent = promptTemplate.messages?.[0]?.content?.text || 'No prompt content available';
+            const llmPromptResponse = await this.llm.processUserPrompt(promptContent, { tools: [], resources: [], prompts: [] });
+            
+            result = {
+              promptName: request.name,
+              template: promptTemplate,
+              analysis: llmPromptResponse.content || 'No analysis provided'
+            };
             break;
           default:
             throw new Error(`Unknown request type: ${(request as any).type}`);

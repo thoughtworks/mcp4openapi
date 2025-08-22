@@ -229,7 +229,7 @@ export class MCPClient {
       throw new Error(`Prompt not found: ${promptName}`);
     }
 
-    console.log(chalk.magenta(`💬 [MCP Client] Executing prompt: ${promptName}`));
+    console.log(chalk.magenta(`💬 [MCP Client] Getting prompt template: ${promptName}`));
     console.log(chalk.gray(`     📋 Parameters: ${JSON.stringify(parameters)}`));
 
     try {
@@ -239,16 +239,18 @@ export class MCPClient {
       });
 
       if (response.error) {
-        console.log(chalk.yellow(`⚠️  [MCP Client] Simulating prompt response due to error: ${response.error.message}`));
-        return this.simulatePromptResponse(promptName, parameters);
+        throw new Error(`Failed to get prompt template: ${response.error.message}`);
       }
 
-      const result = response.result?.messages?.[0]?.content?.text || 'Prompt response received';
-      console.log(chalk.green(`✅ [MCP Client] Prompt executed successfully`));
-      return result;
+      // Return the complete prompt template structure - this should be sent to LLM
+      const promptTemplate = response.result;
+      console.log(chalk.green(`✅ [MCP Client] Retrieved prompt template successfully`));
+      console.log(chalk.gray(`     📄 Template has ${promptTemplate?.messages?.length || 0} messages`));
+      
+      return promptTemplate;
     } catch (error) {
-      console.log(chalk.yellow(`⚠️  [MCP Client] Simulating prompt response due to error: ${(error as Error).message}`));
-      return this.simulatePromptResponse(promptName, parameters);
+      console.log(chalk.red(`❌ [MCP Client] Failed to get prompt template: ${(error as Error).message}`));
+      throw error;
     }
   }
 
@@ -280,8 +282,7 @@ export class MCPClient {
       });
 
       if (response.error) {
-        console.log(chalk.yellow(`⚠️  [MCP Client] Simulating resource response due to error: ${response.error.message}`));
-        return this.simulateResourceResponse(resourceUri);
+        throw new Error(`Resource read error: ${response.error.message}`);
       }
 
       const result = response.result?.contents?.[0];
@@ -299,43 +300,10 @@ export class MCPClient {
       console.log(chalk.green(`✅ [MCP Client] Resource read successfully`));
       return result;
     } catch (error) {
-      console.log(chalk.yellow(`⚠️  [MCP Client] Simulating resource response due to error: ${(error as Error).message}`));
-      return this.simulateResourceResponse(resourceUri);
+      console.log(chalk.red(`❌ [MCP Client] Resource read failed: ${(error as Error).message}`));
+      throw error;
     }
   }
 
-  private simulatePromptResponse(promptName: string, parameters: Record<string, any>): string {
-    if (promptName === 'fraud_analysis') {
-      return 'Based on the payment data provided, this appears to be a legitimate utility payment. The payee "Power Company Australia" is a known utility provider, and the payment amount of $750 is within normal range for utility bills.';
-    } else if (promptName === 'loan_recommendation') {
-      return 'Based on the account history and current products (Complete Freedom Savings and Business Cheque), I recommend considering our Personal Loan at 6.5% APR for amounts up to $50,000, or our Home Equity Line of Credit at 4.2% APR for larger amounts.';
-    }
-    return `Analysis complete for ${promptName}. This is a simulated response with parameters: ${JSON.stringify(parameters)}`;
-  }
 
-  private simulateResourceResponse(resourceUri: string): any {
-    if (resourceUri.includes('products')) {
-      return {
-        contents: [{
-          uri: resourceUri,
-          mimeType: 'application/json',
-          text: JSON.stringify({
-            products: [
-              { id: 'SAV_001', name: 'Basic Savings', type: 'savings', rate: 0.5 },
-              { id: 'CHK_001', name: 'Premium Checking', type: 'checking', monthlyFee: 15 },
-              { id: 'LOAN_001', name: 'Auto Loan', type: 'loan', rate: 4.5 }
-            ]
-          })
-        }]
-      };
-    }
-
-    return {
-      contents: [{
-        uri: resourceUri,
-        mimeType: 'application/json',
-        text: JSON.stringify({ data: `Resource data for ${resourceUri}` })
-      }]
-    };
-  }
 } 
